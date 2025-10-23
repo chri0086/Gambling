@@ -38,6 +38,7 @@
       .nav a:hover { background: rgba(255,255,255,.06); }
       .nav a.active { background: linear-gradient(180deg, rgba(34,211,238,.15), rgba(14,165,233,.1)); border-color: rgba(34,211,238,.25); }
       .balance { display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:12px; }
+      .balance .amount { color: var(--gold); font-weight:800; }
 
       main { padding: 16px; display: grid; gap: 16px; position: relative; max-width: 1100px; margin: 0 auto; }
       .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; }
@@ -57,8 +58,16 @@
       .muted { color: var(--muted); }
       .msg { min-height: 20px; font-weight: 700; }
 
+      /* Blackjack layout polish */
+      .bj-felt { padding: 16px; border-radius: 14px; background:
+        radial-gradient(600px 300px at 50% -10%, rgba(34,211,238,.08), rgba(14,165,233,.03) 60%, rgba(8,16,24,.4));
+        border: 1px solid rgba(255,255,255,0.06);
+        display:grid; grid-template-columns: 1fr 1fr; gap:20px;
+      }
+      .bj-felt h3 { margin: 0 0 8px 0; display:flex; align-items:center; gap:8px }
+
       .chips { display:flex; gap:8px; flex-wrap: wrap; align-items:center; }
-      .chip { min-width:48px; height:48px; border-radius:50%; border:2px dashed rgba(255,255,255,.2); background: radial-gradient(35% 35% at 30% 30%, #334155, #0f172a); color:#f8fafc; display:grid; place-items:center; font-weight:800; cursor:pointer; }
+      .chip { min-width:52px; height:52px; border-radius:50%; border:2px dashed rgba(255,255,255,.18); background: radial-gradient(35% 35% at 30% 30%, #334155, #0f172a); color:#f8fafc; display:grid; place-items:center; font-weight:800; cursor:pointer; }
       .chip[data-bjchip="5"] { background: radial-gradient(35% 35% at 30% 30%, #16a34a, #065f46); }
       .chip[data-bjchip="25"] { background: radial-gradient(35% 35% at 30% 30%, #0ea5e9, #0369a1); }
       .chip[data-bjchip="100"] { background: radial-gradient(35% 35% at 30% 30%, #eab308, #a16207); }
@@ -67,13 +76,13 @@
 
       .bet-quick { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 
-      /* Blackjack visuals */
-      .cards { display:flex; gap:10px; align-items:center; flex-wrap: wrap; min-height: 110px; }
-      .card { width: 70px; height: 100px; background: var(--card); color: #111827; border: 1px solid var(--card-edge); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); display:grid; grid-template-rows:auto 1fr auto; padding:6px; font-weight:700 }
+      /* Cards */
+      .cards { display:flex; gap:12px; align-items:center; flex-wrap: wrap; min-height: 140px; }
+      .card { width: 86px; height: 120px; background: var(--card); color: #111827; border: 1px solid var(--card-edge); border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); display:grid; grid-template-rows:auto 1fr auto; padding:8px; font-weight:700 }
       .card.back { background: repeating-linear-gradient(45deg, #0ea5e9 0 8px, #0369a1 8px 16px); border-color:#0ea5e9 }
       .pips{font-size:14px; display:flex; align-items:center; justify-content:space-between}
       .suit{font-size:16px}
-      .center{align-self:center; justify-self:center; font-size:22px}
+      .center{align-self:center; justify-self:center; font-size:24px}
       .red{ color:#b91c1c }
 
       /* Animations */
@@ -87,7 +96,6 @@
       .shake { animation: shake 500ms ease-in-out; }
       @keyframes glow { from { box-shadow: 0 0 0 rgba(255,255,255,0)} to { box-shadow: 0 0 24px rgba(255,255,255,.35)} }
       .win { animation: glow 500ms ease-in-out alternate 2; outline: 2px solid rgba(255,255,255,.25); border-color: rgba(255,255,255,.35) }
-      .blur { filter: blur(2px) brightness(1.05); }
 
       /* Bankroll flash feedback */
       .amount.flash-up { animation: amtUp 750ms ease-out; }
@@ -121,16 +129,18 @@
     </header>
     <main>
       <!-- Blackjack only -->
-      <section class="panel grid two" id="game-blackjack">
-        <div>
-          <h3>Dealer <span class="badge" id="bj-dealer-score">–</span></h3>
-          <div class="cards" id="bj-dealer-cards"></div>
+      <section class="panel" id="game-blackjack">
+        <div class="bj-felt">
+          <div>
+            <h3>Dealer <span class="badge" id="bj-dealer-score">–</span></h3>
+            <div class="cards" id="bj-dealer-cards"></div>
+          </div>
+          <div>
+            <h3>Spieler <span class="badge" id="bj-player-score">–</span></h3>
+            <div class="cards" id="bj-player-cards"></div>
+          </div>
         </div>
-        <div>
-          <h3>Spieler <span class="badge" id="bj-player-score">–</span></h3>
-          <div class="cards" id="bj-player-cards"></div>
-        </div>
-        <div class="controls">
+        <div class="controls" style="margin-top:12px">
           <strong>Einsatz:</strong>
           <span id="bj-bet" class="badge">$0</span>
           <div class="chips">
@@ -244,17 +254,35 @@
         function isBJ(hand){ return hand.length===2 && score(hand)===21; }
 
         function render(){
-          renderHand(el.pCards, player, false); el.pScore.textContent = label(player);
-          renderHand(el.dCards, dealer, hideHole); el.dScore.textContent = hideHole? hiddenLabel(dealer) : label(dealer);
+          renderHand(el.pCards, player, false);
+          el.pScore.textContent = label(player);
+          renderHand(el.dCards, dealer, hideHole);
+          el.dScore.textContent = hideHole? hiddenLabel(dealer) : label(dealer);
           if(!hideHole){ flipHole(); }
           el.bet.textContent = fmt(bet);
         }
         function label(h){ const {total,soft}=detail(h); return soft&&total<=21?`${total} (soft)`:String(total); }
-        function hiddenLabel(h){ if(!h.length) return '–'; const v=score([h[0]]); return `${v} + ?`; }
-        function renderHand(container, hand, hide){ container.innerHTML=''; hand.forEach((c,i)=>{ const wrap=document.createElement('div'); wrap.style.display='inline-block'; wrap.style.transform=`rotate(${(i - (hand.length-1)/2)*2}deg)`; const n = hide&&i===0? backCard() : cardEl(c); n.classList.add('slide-in'); wrap.appendChild(n); container.appendChild(wrap); }); }
+        function hiddenLabel(h){
+          if(h.length===0) return '–';
+          if(h.length===1) return `${score([h[0]])} + ?`;
+          // show only upcard value + ? (do not show the hole/back card at all)
+          const up = score([h[1]]);
+          return `${up} + ?`;
+        }
+        function renderHand(container, hand, hide){
+          container.innerHTML='';
+          hand.forEach((c,i)=>{
+            if(hide && i===0) return; // skip rendering the hole card entirely
+            const wrap=document.createElement('div');
+            wrap.style.display='inline-block';
+            wrap.style.transform=`rotate(${(i - (hand.length-1)/2)*2}deg)`;
+            const n = cardEl(c);
+            n.classList.add('slide-in');
+            wrap.appendChild(n); container.appendChild(wrap);
+          });
+        }
         function cardEl(c){ const red=(c.suit==='♥'||c.suit==='♦')?'red':''; const el=document.createElement('div'); el.className='card'; el.innerHTML=`<div class="pips"><span class="${red}">${c.rank}</span><span class="suit ${red}">${c.suit}</span></div><div class="center ${red}">${['J','Q','K','A'].includes(c.rank)?c.suit:c.rank}</div><div class="pips" style="opacity:.65"><span class="${red}">${c.suit}</span><span class="${red}">${c.rank}</span></div>`; return el; }
-        function backCard(){ const el=document.createElement('div'); el.className='card back'; return el; }
-        function flipHole(){ const first = el.dCards.firstElementChild; if(first && !first.classList.contains('back')){ first.classList.add('flip-in'); setTimeout(()=>first.classList.remove('flip-in'), 300); } }
+        function flipHole(){ const first = el.dCards.firstElementChild; if(first){ first.classList.add('flip-in'); setTimeout(()=>first.classList.remove('flip-in'), 300); } }
 
         function setMsg(t){ el.msg.textContent=t||''; }
         const btnMinus = $('#bj-bet-minus'), btnPlus=$('#bj-bet-plus'), btnHalf=$('#bj-bet-half'), btnBetDbl=$('#bj-bet-double'), btnMax=$('#bj-bet-max');
