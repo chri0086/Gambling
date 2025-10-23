@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crash</title>
+    <style>
+      :root { --bg:#0a0f12; --panel:#0e1520; --muted:#9aa4b2; --text:#e6edf3; --accent:#22d3ee; --accent-2:#0ea5e9; --danger:#ef4444; --ok:#10b981; --gold:#ffd166; }
+      *{box-sizing:border-box}
+      html, body { height: 100%; }
+      body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: radial-gradient(1200px 800px at 50% -10%, #0e1b2a, #081018 60%, #050a10 100%); color: var(--text); }
+      body.reduce-motion * { animation: none !important; transition: none !important; }
+
+      .topbar { display:flex; align-items:center; gap:12px; justify-content:space-between; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.06); background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); position: sticky; top: 0; backdrop-filter: blur(6px); }
+      .brand { font-weight:800; display:flex; align-items:center; gap:8px }
+      .brand .dot{ width:10px; height:10px; border-radius:50%; background: var(--accent); box-shadow: 0 0 12px var(--accent) }
+      .nav { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+      .nav a { color: var(--text); text-decoration:none; padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.08); }
+      .nav a:hover { background: rgba(255,255,255,.06); }
+      .nav a.active { background: linear-gradient(180deg, rgba(34,211,238,.15), rgba(14,165,233,.1)); border-color: rgba(34,211,238,.25); }
+      .balance { display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:12px; }
+      .balance .amount { color: var(--gold); font-weight:800; }
+
+      main { padding: 16px; display:grid; gap:16px; position: relative; max-width: 900px; margin: 0 auto; }
+      .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; }
+      .controls { display:flex; gap: 10px; flex-wrap:wrap; align-items:center }
+      .input { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); color: var(--text); padding:8px 10px; border-radius:10px }
+      .btn { background: var(--accent-2); color:#001018; border: none; padding: 10px 14px; border-radius:10px; font-weight:700; cursor:pointer; box-shadow: 0 6px 16px rgba(14,165,233,.35) }
+      .btn:hover { filter: brightness(1.06) }
+      .btn:disabled { opacity:.5; cursor:not-allowed }
+      .btn.gold { background: linear-gradient(180deg, #ffd166, #ffb703); color: #1f2937; box-shadow: 0 6px 16px rgba(255,183,3,.25) }
+      .btn.ok { background: var(--ok); color: #00150d; box-shadow: 0 6px 16px rgba(16,185,129,.3) }
+      .btn.ghost { background: transparent; border: 1px solid rgba(255,255,255,.12); color: var(--text); }
+      .muted { color: var(--muted); }
+      .msg { min-height:20px; font-weight:700 }
+      .badge { padding:2px 8px; border-radius:999px; background: rgba(255,255,255,0.08); font-size:12px }
+
+      .crash { display:flex; align-items:center; gap:12px; }
+      .crash .mult { font-size: 28px; font-weight: 900; letter-spacing: .5px }
+      .crash .live { color: var(--accent); }
+      .crash .busted { color: var(--danger); }
+      @keyframes pulse { 0%,100%{ transform: scale(1); } 50%{ transform: scale(1.06); } }
+      .crash.live .mult { animation: pulse 800ms ease-in-out infinite; }
+
+      /* balance flash */
+      .amount.flash-up { animation: amtUp 750ms ease-out; }
+      .amount.flash-down { animation: amtDown 750ms ease-out; }
+      @keyframes amtUp { 0%{ color:#fff } 20%{ color:#10b981; transform: scale(1.08) } 100%{ color: var(--gold); transform: scale(1) } }
+      @keyframes amtDown { 0%{ color:#fff } 20%{ color:#ef4444; transform: scale(0.96) } 100%{ color: var(--gold); transform: scale(1) } }
+
+      #fx-canvas{ position:absolute; inset:0; pointer-events:none }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><span class="dot"></span> <span>Crash</span></div>
+      <nav class="nav">
+        <a href="index.html">Blackjack</a>
+        <a href="roulette.html">Roulette</a>
+        <a href="slots.html">Slots</a>
+        <a href="dice.html">Dice</a>
+        <a href="crash.html" class="active">Crash</a>
+      </nav>
+      <div class="balance">
+        <span>Guthaben:</span>
+        <span class="amount" id="bankroll">$1,000</span>
+        <button class="btn" id="reset-bank">Reset</button>
+        <button class="btn" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
+        <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">Motion</button>
+      </div>
+    </header>
+    <main>
+      <section class="panel" id="game-crash">
+        <h3>Crash</h3>
+        <div class="controls">
+          <label>Einsatz ($): <input type="number" id="cr-bet" class="input" value="5" min="1" step="1"/></label>
+          <button class="btn gold" id="cr-start">Start</button>
+          <button class="btn ok" id="cr-cash" disabled>Cash Out</button>
+        </div>
+        <div class="crash">
+          <div class="mult" id="cr-mult">1.00x</div>
+          <div class="muted" id="cr-status">Bereit</div>
+        </div>
+        <div class="msg" id="cr-msg"></div>
+      </section>
+      <canvas id="fx-canvas"></canvas>
+    </main>
+    <script>
+      'use strict';
+      const $=(s)=>document.querySelector(s); const $$=(s)=>Array.from(document.querySelectorAll(s)); const fmt=(n)=>`$${Number(n).toLocaleString()}`;
+      const BANK_KEY='casino_bankroll_v1'; const START_BANK=1000; let bankroll=loadBank(); const bankrollEl=$('#bankroll');
+      function loadBank(){ try{ const n=Number(localStorage.getItem(BANK_KEY)); if(Number.isFinite(n)&&n>=0) return Math.floor(n);}catch{} return START_BANK; }
+      function saveBank(){ try{ localStorage.setItem(BANK_KEY, String(bankroll)); }catch{} }
+      function credit(delta){ bankroll=Math.max(0, bankroll+delta); bankrollEl.textContent=fmt(bankroll); bankrollEl.classList.remove('flash-up','flash-down'); void bankrollEl.offsetWidth; bankrollEl.classList.add(delta>=0?'flash-up':'flash-down'); saveBank(); }
+      credit(0);
+      $('#reset-bank').addEventListener('click', ()=>{ bankroll=START_BANK; credit(0); Sound.play('click'); });
+      $('#motion-toggle').addEventListener('click', ()=>{ document.body.classList.toggle('reduce-motion'); });
+
+      const MUTE_KEY='casino_mute_v1'; const MuteBtn=$('#mute-toggle');
+      const Sound=(()=>{ let ctx=null; let muted=(function(){ try{ return localStorage.getItem(MUTE_KEY)==='1'; }catch{} return false; })(); function saveMute(){ try{ localStorage.setItem(MUTE_KEY, muted?'1':'0'); }catch{} } function ensure(){ if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; try{ ctx=new AC(); }catch{} } } function envGain(g){ const gain=ctx.createGain(); gain.gain.value=g; gain.connect(ctx.destination); return gain; } function tone(f=440,d=0.12,t='sine',v=0.05){ if(muted||!ctx) return; const o=ctx.createOscillator(); const g=envGain(v); o.type=t; o.frequency.value=f; o.connect(g); const tt=ctx.currentTime; o.start(tt); o.stop(tt+d); } function click(){ tone(660,0.06,'square',0.03) } function win(){ tone(880,0.1,'sine',0.06); setTimeout(()=>tone(1320,0.12,'sine',0.06),90)} function lose(){ tone(220,0.18,'sawtooth',0.05) } function cash(){ tone(740,0.08,'square',0.05); setTimeout(()=>tone(990,0.1,'square',0.05),80); } function update(){ MuteBtn.setAttribute('aria-pressed', muted?'true':'false'); MuteBtn.textContent = muted?'🔇':'🔊'; } update(); return { toggle(){ ensure(); muted=!muted; saveMute(); update(); }, play(n){ ensure(); if(muted) return; if(n==='click') click(); else if(n==='win') win(); else if(n==='lose') lose(); else if(n==='cash') cash(); } }; })();
+      MuteBtn.addEventListener('click', ()=>Sound.toggle());
+
+      const fxCanvas=$('#fx-canvas');
+      const FX=(()=>{ const ctx=fxCanvas.getContext('2d'); let ps=[]; let running=false; let raf=0; function resize(){ const r=fxCanvas.getBoundingClientRect(); fxCanvas.width=Math.floor(r.width*devicePixelRatio); fxCanvas.height=Math.floor(r.height*devicePixelRatio);} window.addEventListener('resize',resize); resize(); function randColor(){ const cs=['#22d3ee','#0ea5e9','#10b981','#f59e0b','#ef4444','#eab308','#a78bfa','#f472b6']; return cs[Math.floor(Math.random()*cs.length)]; } function spawn(n=120){ const w=fxCanvas.width,h=fxCanvas.height; for(let i=0;i<n;i++){ ps.push({ x:w/2+(Math.random()*w/3-w/6), y:-20*devicePixelRatio, vx:(Math.random()-0.5)*3*devicePixelRatio, vy:(2+Math.random()*2)*devicePixelRatio, g:0.08*devicePixelRatio, s:(2+Math.random()*3)*devicePixelRatio, c:randColor(), a:1, rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.2 }); } } function step(){ if(!running) return; const w=fxCanvas.width,h=fxCanvas.height; ctx.clearRect(0,0,w,h); ps.forEach(p=>{ p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.a=Math.max(0,p.a-0.005); ctx.save(); ctx.globalAlpha=p.a; ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c; ctx.fillRect(-p.s,-p.s/2,p.s*2,p.s); ctx.restore(); }); ps=ps.filter(p=>p.y<h+40&&p.a>0.01); if(ps.length===0){ running=false; cancelAnimationFrame(raf); return; } raf=requestAnimationFrame(step);} function burst(intensity=1){ resize(); spawn(Math.floor(120*intensity)); if(!running){ running=true; step(); } } return { burst }; })();
+
+      // Crash logic
+      const betIn=$('#cr-bet'); const startBtn=$('#cr-start'); const cashBtn=$('#cr-cash'); const multEl=$('#cr-mult'); const statusEl=$('#cr-status'); const msg=$('#cr-msg');
+      let timer=null; let mult=1.0; let target=0; let active=false; let cashed=false; let bet=0;
+      function randomCrash(){ const r=Math.random(); return Math.max(1.01, Math.pow(1/(1-r), 0.35)); }
+      function reset(){ if(timer){ clearInterval(timer); timer=null; } mult=1.0; target=0; active=false; cashed=false; startBtn.disabled=false; cashBtn.disabled=true; multEl.textContent='1.00x'; statusEl.textContent='Bereit'; statusEl.className='muted'; }
+      reset();
+      startBtn.addEventListener('click', ()=>{
+        bet = Math.max(1, Math.floor(Number(betIn.value)||0)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
+        credit(-bet); Sound.play('click'); target=randomCrash(); active=true; cashed=false; startBtn.disabled=true; cashBtn.disabled=false; msg.textContent=''; statusEl.textContent='LIVE'; statusEl.className='crash live';
+        timer=setInterval(()=>{
+          mult = +(mult*1.02).toFixed(2); multEl.textContent=mult.toFixed(2)+'x';
+          if(mult>=target){ clearInterval(timer); timer=null; active=false; cashBtn.disabled=true; statusEl.textContent='BUST'; statusEl.className='crash busted'; if(!cashed){ msg.textContent='Bust – Verlust.'; Sound.play('lose'); } }
+        }, 120);
+      });
+      cashBtn.addEventListener('click', ()=>{ if(!active||cashed) return; cashed=true; const payout=Math.floor(bet*mult); credit(payout); msg.textContent='Cash Out '+fmt(payout-bet)+' ('+mult.toFixed(2)+'x)'; Sound.play('cash'); if(mult>=5 || (payout-bet)>=100) FX.burst(1.1); reset(); });
+    </script>
+  </body>
+</html>

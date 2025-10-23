@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Casino (Demo)</title>
+    <title>Blackjack</title>
     <style>
       :root {
         --bg: #0a0f12;
@@ -27,52 +27,23 @@
         font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         background: radial-gradient(1200px 800px at 50% -10%, #0e1b2a, #081018 60%, #050a10 100%);
         color: var(--text);
-        display: grid;
-        grid-template-columns: 240px 1fr;
-        gap: 0;
       }
       body.reduce-motion * { animation: none !important; transition: none !important; }
-      body.game-blackjack main .panel { border-color: rgba(34,211,238,.16); }
-      body.game-roulette main .panel { border-color: rgba(239,68,68,.16); }
-      body.game-slots main .panel { border-color: rgba(234,179,8,.16); }
-      body.game-dice main .panel { border-color: rgba(16,185,129,.16); }
-      body.game-crash main .panel { border-color: rgba(167,139,250,.16); }
-      aside {
-        background: linear-gradient(180deg, var(--panel), #0a1220);
-        border-right: 1px solid rgba(255,255,255,0.06);
-        padding: 16px 12px;
-        display: grid;
-        grid-template-rows: auto auto 1fr auto;
-        gap: 16px;
-        min-height: 100vh;
-      }
-      aside.collapsed { width: 68px; overflow: hidden; grid-template-rows: auto 1fr auto; }
-      aside.collapsed .balance, aside.collapsed .foot { display: none; }
-      aside.collapsed .brand span.label { display: none; }
-      aside.collapsed .nav-btn span.label { display: none; }
-      aside.collapsed .nav-btn { text-align: center; justify-content: center; }
+
+      .topbar { display:flex; align-items:center; gap:12px; justify-content:space-between; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06); background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); position: sticky; top:0; backdrop-filter: blur(6px); }
       .brand { font-weight: 800; letter-spacing: .5px; display:flex; align-items:center; gap:8px }
       .brand .dot { width:10px; height:10px; border-radius:50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
-      .brand .toggle { margin-left: auto; background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.12); border-radius:8px; padding:4px 8px; cursor:pointer }
-      .balance {
-        display:flex; align-items:center; justify-content:space-between; gap:10px;
-        background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); padding:10px; border-radius:12px;
-      }
-      .balance .amount { color: var(--gold); font-weight:800; }
-      .balance button { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.12); padding:6px 10px; border-radius:8px; cursor:pointer }
-  nav { display: grid; gap: 6px; }
-  .nav-btn { display:flex; align-items:center; gap:10px; text-align:left; background: transparent; color: var(--text); border: 1px solid transparent; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
-      .nav-btn:hover { background: rgba(255,255,255,0.06); }
-      .nav-btn.active { background: linear-gradient(180deg, rgba(34,211,238,.15), rgba(14,165,233,.1)); border-color: rgba(34,211,238,.25); }
-      .foot { color: var(--muted); font-size: 12px; opacity: .9; }
+      .nav { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+      .nav a { color: var(--text); text-decoration:none; padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.08); }
+      .nav a:hover { background: rgba(255,255,255,.06); }
+      .nav a.active { background: linear-gradient(180deg, rgba(34,211,238,.15), rgba(14,165,233,.1)); border-color: rgba(34,211,238,.25); }
+      .balance { display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:12px; }
 
-  main { padding: 16px; display: grid; gap: 16px; position: relative; }
+      main { padding: 16px; display: grid; gap: 16px; position: relative; max-width: 1100px; margin: 0 auto; }
       .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; }
-      .game-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-      .title { font-weight: 800; letter-spacing: .5px; }
       .grid { display:grid; gap:16px; }
       .two { grid-template-columns: 1fr 1fr; }
-      @media (max-width: 900px){ body{grid-template-columns: 1fr} aside{position:sticky; top:0} .two{grid-template-columns:1fr} }
+      @media (max-width: 900px){ .two{grid-template-columns:1fr} }
 
       .controls { display:flex; gap: 10px; flex-wrap: wrap; align-items: center; }
       .input { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); color: var(--text); padding: 8px 10px; border-radius: 10px; }
@@ -82,21 +53,21 @@
       .btn.ok { background: var(--ok); color: #00150d; box-shadow: 0 6px 16px rgba(16,185,129,.3) }
       .btn.danger { background: var(--danger); color: #180000; box-shadow: 0 6px 16px rgba(239,68,68,.3) }
       .btn.gold { background: linear-gradient(180deg, #ffd166, #ffb703); color: #1f2937; box-shadow: 0 6px 16px rgba(255,183,3,.25) }
+      .btn.ghost { background: transparent; border: 1px solid rgba(255,255,255,.12); color: var(--text); }
       .muted { color: var(--muted); }
       .msg { min-height: 20px; font-weight: 700; }
 
-  .chips { display:flex; gap:8px; flex-wrap: wrap; align-items:center; }
-  .chip { min-width:48px; height:48px; border-radius:50%; border:2px dashed rgba(255,255,255,.2); background: radial-gradient(35% 35% at 30% 30%, #334155, #0f172a); color:#f8fafc; display:grid; place-items:center; font-weight:800; cursor:pointer; }
-  .chip[data-bjchip="5"], .chip[data-chip="5"] { background: radial-gradient(35% 35% at 30% 30%, #16a34a, #065f46); }
-  .chip[data-bjchip="25"], .chip[data-chip="25"] { background: radial-gradient(35% 35% at 30% 30%, #0ea5e9, #0369a1); }
-  .chip[data-bjchip="100"], .chip[data-chip="100"] { background: radial-gradient(35% 35% at 30% 30%, #eab308, #a16207); }
-  .chip[data-bjchip="250"], .chip[data-chip="250"] { background: radial-gradient(35% 35% at 30% 30%, #ef4444, #991b1b); }
+      .chips { display:flex; gap:8px; flex-wrap: wrap; align-items:center; }
+      .chip { min-width:48px; height:48px; border-radius:50%; border:2px dashed rgba(255,255,255,.2); background: radial-gradient(35% 35% at 30% 30%, #334155, #0f172a); color:#f8fafc; display:grid; place-items:center; font-weight:800; cursor:pointer; }
+      .chip[data-bjchip="5"] { background: radial-gradient(35% 35% at 30% 30%, #16a34a, #065f46); }
+      .chip[data-bjchip="25"] { background: radial-gradient(35% 35% at 30% 30%, #0ea5e9, #0369a1); }
+      .chip[data-bjchip="100"] { background: radial-gradient(35% 35% at 30% 30%, #eab308, #a16207); }
+      .chip[data-bjchip="250"] { background: radial-gradient(35% 35% at 30% 30%, #ef4444, #991b1b); }
       .chip:disabled { opacity:.5; cursor:not-allowed }
 
-  .bet-quick { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  .btn.ghost { background: transparent; border: 1px solid rgba(255,255,255,.12); color: var(--text); }
+      .bet-quick { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 
-      /* Blackjack visuals reused */
+      /* Blackjack visuals */
       .cards { display:flex; gap:10px; align-items:center; flex-wrap: wrap; min-height: 110px; }
       .card { width: 70px; height: 100px; background: var(--card); color: #111827; border: 1px solid var(--card-edge); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); display:grid; grid-template-rows:auto 1fr auto; padding:6px; font-weight:700 }
       .card.back { background: repeating-linear-gradient(45deg, #0ea5e9 0 8px, #0369a1 8px 16px); border-color:#0ea5e9 }
@@ -105,78 +76,52 @@
       .center{align-self:center; justify-self:center; font-size:22px}
       .red{ color:#b91c1c }
 
-  /* Animations */
-  @keyframes slideInCard { from { transform: translateY(-24px) scale(0.96); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-  .card.slide-in { animation: slideInCard 300ms ease-out both; }
-  @keyframes flipIn { from { transform: rotateY(90deg); opacity: .6; } to { transform: rotateY(0deg); opacity: 1; } }
-  .card.flip-in { transform-style: preserve-3d; animation: flipIn 280ms ease-out both; }
-  @keyframes popIn { 0%{ transform: scale(.8); opacity:.2 } 60%{ transform: scale(1.08); opacity:1 } 100%{ transform: scale(1) } }
-  .pop { animation: popIn 350ms ease-out; }
-  @keyframes shake { 0%,100%{ transform:translateX(0) } 20%{ transform:translateX(-4px) } 40%{ transform:translateX(4px) } 60%{ transform:translateX(-3px) } 80%{ transform:translateX(3px) } }
-  .shake { animation: shake 500ms ease-in-out; }
-  @keyframes glow { from { box-shadow: 0 0 0 rgba(255,255,255,0)} to { box-shadow: 0 0 24px rgba(255,255,255,.35)} }
-  .win { animation: glow 500ms ease-in-out alternate 2; outline: 2px solid rgba(255,255,255,.25); border-color: rgba(255,255,255,.35) }
-  .blur { filter: blur(2px) brightness(1.05); }
+      /* Animations */
+      @keyframes slideInCard { from { transform: translateY(-24px) scale(0.96); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+      .card.slide-in { animation: slideInCard 300ms ease-out both; }
+      @keyframes flipIn { from { transform: rotateY(90deg); opacity: .6; } to { transform: rotateY(0deg); opacity: 1; } }
+      .card.flip-in { transform-style: preserve-3d; animation: flipIn 280ms ease-out both; }
+      @keyframes popIn { 0%{ transform: scale(.8); opacity:.2 } 60%{ transform: scale(1.08); opacity:1 } 100%{ transform: scale(1) } }
+      .pop { animation: popIn 350ms ease-out; }
+      @keyframes shake { 0%,100%{ transform:translateX(0) } 20%{ transform:translateX(-4px) } 40%{ transform:translateX(4px) } 60%{ transform:translateX(-3px) } 80%{ transform:translateX(3px) } }
+      .shake { animation: shake 500ms ease-in-out; }
+      @keyframes glow { from { box-shadow: 0 0 0 rgba(255,255,255,0)} to { box-shadow: 0 0 24px rgba(255,255,255,.35)} }
+      .win { animation: glow 500ms ease-in-out alternate 2; outline: 2px solid rgba(255,255,255,.25); border-color: rgba(255,255,255,.35) }
+      .blur { filter: blur(2px) brightness(1.05); }
 
-  /* Spinner (Roulette) */
-  .spinner { width: 36px; height: 36px; border-radius: 50%; border: 3px solid rgba(255,255,255,.15); border-top-color: var(--accent-2); animation: spin 900ms linear infinite }
-  @keyframes spin { to { transform: rotate(360deg) } }
-  .hide { display: none !important; }
+      /* Bankroll flash feedback */
+      .amount.flash-up { animation: amtUp 750ms ease-out; }
+      .amount.flash-down { animation: amtDown 750ms ease-out; }
+      @keyframes amtUp { 0%{ color:#fff } 20%{ color:#10b981; transform: scale(1.08) } 100%{ color: var(--gold); transform: scale(1) } }
+      @keyframes amtDown { 0%{ color:#fff } 20%{ color:#ef4444; transform: scale(0.96) } 100%{ color: var(--gold); transform: scale(1) } }
 
-  /* Crash pulse */
-  @keyframes pulse { 0%,100%{ transform: scale(1); } 50%{ transform: scale(1.06); } }
-  .crash.live .mult { animation: pulse 800ms ease-in-out infinite; }
+      /* FX Canvas */
+      #fx-canvas { position: absolute; inset: 0; pointer-events: none; }
 
-  /* Bankroll flash feedback */
-  .amount.flash-up { animation: amtUp 750ms ease-out; }
-  .amount.flash-down { animation: amtDown 750ms ease-out; }
-  @keyframes amtUp { 0%{ color:#fff } 20%{ color:#10b981; transform: scale(1.08) } 100%{ color: var(--gold); transform: scale(1) } }
-  @keyframes amtDown { 0%{ color:#fff } 20%{ color:#ef4444; transform: scale(0.96) } 100%{ color: var(--gold); transform: scale(1) } }
-
-  /* Page transition */
-  @keyframes pageFade { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: translateY(0) } }
-  .page-fade { animation: pageFade 280ms ease-out both; }
-
-  /* FX Canvas */
-  #fx-canvas { position: absolute; inset: 0; pointer-events: none; }
-
-      /* Slots */
-      .reels { display:grid; grid-template-columns: repeat(3, 80px); gap:10px; padding:12px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; width:max-content }
-      .reel { width:80px; height:80px; display:grid; place-items:center; font-size:36px; background: rgba(0,0,0,0.2); border-radius:10px; }
-
-      /* Roulette */
-      .roulette-out { display:flex; gap:10px; align-items:center }
       .badge { padding:2px 8px; border-radius:999px; background: rgba(255,255,255,0.08); font-size:12px }
-
-      /* Crash */
-      .crash { display:flex; align-items:center; gap:12px; }
-      .crash .mult { font-size: 28px; font-weight: 900; letter-spacing: .5px }
-      .crash .live { color: var(--accent); }
-      .crash .busted { color: var(--danger); }
     </style>
   </head>
   <body>
-    <aside>
-      <div class="brand"><span class="dot"></span> <span class="label">Casino Demo</span> <button class="toggle" id="toggle-sidebar" title="Menü ein/aus">☰</button></div>
+    <header class="topbar">
+      <div class="brand"><span class="dot"></span> <span>Blackjack</span></div>
+      <nav class="nav">
+        <a href="index.html" class="active">Blackjack</a>
+        <a href="roulette.html">Roulette</a>
+        <a href="slots.html">Slots</a>
+        <a href="dice.html">Dice</a>
+        <a href="crash.html">Crash</a>
+      </nav>
       <div class="balance">
-        <span>Guthaben</span>
+        <span>Guthaben:</span>
         <span class="amount" id="bankroll">$1,000</span>
+        <button class="btn" id="reset-bank">Reset</button>
+        <button class="btn" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
+        <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">Motion</button>
       </div>
-      <nav id="nav"></nav>
-      <div class="foot">Singleplayer-Demo. Kein echtes Geld. Guthaben wird lokal gespeichert.</div>
-    </aside>
+    </header>
     <main>
-      <div class="panel game-header">
-        <div class="title" id="game-title">Willkommen</div>
-        <div class="controls">
-          <button class="btn" id="reset-bank">Reset Guthaben</button>
-          <button class="btn" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊 Ton</button>
-          <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">Motion</button>
-        </div>
-      </div>
-
-      <!-- Blackjack -->
-      <section class="panel grid two" id="game-blackjack" hidden>
+      <!-- Blackjack only -->
+      <section class="panel grid two" id="game-blackjack">
         <div>
           <h3>Dealer <span class="badge" id="bj-dealer-score">–</span></h3>
           <div class="cards" id="bj-dealer-cards"></div>
@@ -213,81 +158,6 @@
         <div class="msg" id="bj-msg"></div>
         <div class="muted">Regeln: 6-Deck Shoe • Dealer steht auf 17 • Blackjack 3:2</div>
       </section>
-
-      <!-- Roulette -->
-      <section class="panel" id="game-roulette" hidden>
-        <h3>Roulette</h3>
-        <div class="controls">
-          <label>Wette ($): <input type="number" id="rl-bet" class="input" value="5" min="1" step="1" /></label>
-          <label>Typ:
-            <select id="rl-type" class="input">
-              <option value="red">Rot (x2)</option>
-              <option value="black">Schwarz (x2)</option>
-              <option value="odd">Ungerade (x2)</option>
-              <option value="even">Gerade (x2)</option>
-              <option value="number">Zahl (x36)</option>
-            </select>
-          </label>
-          <label id="rl-number-wrap" hidden>Zahl (0–36): <input type="number" id="rl-number" class="input" value="7" min="0" max="36"/></label>
-          <button class="btn gold" id="rl-spin">Drehen</button>
-        </div>
-        <div class="roulette-out" style="gap:16px">
-          <div id="rl-wheel" class="spinner hide"></div>
-          <div>Ergebnis: <span class="badge" id="rl-result">–</span></div>
-          <div class="muted">Farbe: <span id="rl-color">–</span></div>
-        </div>
-        <div class="msg" id="rl-msg"></div>
-      </section>
-
-      <!-- Slots -->
-      <section class="panel" id="game-slots" hidden>
-        <h3>Slots</h3>
-        <div class="controls">
-          <label>Einsatz ($): <input type="number" id="sl-bet" class="input" value="5" min="1" step="1"/></label>
-          <button class="btn gold" id="sl-spin">Spin</button>
-        </div>
-        <div class="reels" id="sl-reels">
-          <div class="reel">🍒</div>
-          <div class="reel">🍒</div>
-          <div class="reel">🍒</div>
-          <div class="reel">🍋</div>
-          <div class="reel">🍋</div>
-          <div class="reel">🍋</div>
-          <div class="reel">⭐</div>
-          <div class="reel">⭐</div>
-          <div class="reel">⭐</div>
-        </div>
-        <div class="msg" id="sl-msg"></div>
-        <div class="muted">Gewinnlinien: 3 horizontale Reihen. Auszahlungen: 7️⃣ x10, ⭐ x5, 🔔 x3, 🍒/🍋 x2</div>
-      </section>
-
-      <!-- Dice -->
-      <section class="panel" id="game-dice" hidden>
-        <h3>Dice</h3>
-        <div class="controls">
-          <label>Einsatz ($): <input type="number" id="dc-bet" class="input" value="5" min="1" step="1"/></label>
-          <label>Gewinnchance (%): <input type="number" id="dc-chance" class="input" value="50" min="1" max="95"/></label>
-          <button class="btn gold" id="dc-roll">Roll</button>
-        </div>
-        <div>Wurf: <span class="badge" id="dc-roll-out">–</span> • Erwartete Auszahlung: <span class="badge" id="dc-quote">–</span></div>
-        <div class="msg" id="dc-msg"></div>
-        <div class="muted">Quote ~ (0.99 / Chance) • House-Edge ~1%</div>
-      </section>
-
-      <!-- Crash -->
-      <section class="panel" id="game-crash" hidden>
-        <h3>Crash</h3>
-        <div class="controls">
-          <label>Einsatz ($): <input type="number" id="cr-bet" class="input" value="5" min="1" step="1"/></label>
-          <button class="btn gold" id="cr-start">Start</button>
-          <button class="btn ok" id="cr-cash" disabled>Cash Out</button>
-        </div>
-        <div class="crash">
-          <div class="mult" id="cr-mult">1.00x</div>
-          <div class="muted" id="cr-status">Bereit</div>
-        </div>
-        <div class="msg" id="cr-msg"></div>
-      </section>
       <canvas id="fx-canvas"></canvas>
     </main>
 
@@ -303,55 +173,20 @@
       const START_BANK = 1000;
       let bankroll = loadBank();
       const bankrollEl = $('#bankroll');
-  function loadBank(){ try{ const n = Number(localStorage.getItem(BANK_KEY)); if(Number.isFinite(n) && n>=0) return Math.floor(n);}catch{} return START_BANK; }
-  function saveBank(){ try{ localStorage.setItem(BANK_KEY, String(bankroll)); }catch{} }
-  function credit(delta){ bankroll = Math.max(0, bankroll + delta); bankrollEl.textContent = fmt(bankroll); bankrollEl.classList.remove('flash-up','flash-down'); void bankrollEl.offsetWidth; bankrollEl.classList.add(delta>=0?'flash-up':'flash-down'); saveBank(); }
-  function iconFor(id){ switch(id){ case 'blackjack': return '♠️'; case 'roulette': return '🎯'; case 'slots': return '🎰'; case 'dice': return '🎲'; case 'crash': return '🚀'; default: return '🎮'; } }
+      function loadBank(){ try{ const n = Number(localStorage.getItem(BANK_KEY)); if(Number.isFinite(n) && n>=0) return Math.floor(n);}catch{} return START_BANK; }
+      function saveBank(){ try{ localStorage.setItem(BANK_KEY, String(bankroll)); }catch{} }
+      function credit(delta){ bankroll = Math.max(0, bankroll + delta); bankrollEl.textContent = fmt(bankroll); bankrollEl.classList.remove('flash-up','flash-down'); void bankrollEl.offsetWidth; bankrollEl.classList.add(delta>=0?'flash-up':'flash-down'); saveBank(); }
       credit(0);
 
-      // Navigation
-      const GAMES = [
-        { id: 'blackjack', name: 'Blackjack' },
-        { id: 'roulette', name: 'Roulette' },
-        { id: 'slots', name: 'Slots' },
-        { id: 'dice', name: 'Dice' },
-        { id: 'crash', name: 'Crash' },
-      ];
-      const nav = $('#nav');
-      const titleEl = $('#game-title');
-      let currentGame = null;
-      GAMES.forEach(g => {
-        const b = document.createElement('button');
-        b.className = 'nav-btn'; b.innerHTML = `<span class="icon">${iconFor(g.id)}</span><span class="label">${g.name}</span>`; b.dataset.target = g.id;
-        b.addEventListener('click', ()=>showGame(g.id));
-        nav.appendChild(b);
-      });
-      function showGame(id){
-        if(currentGame===id) return;
-        // update nav
-        $$('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.target===id));
-        // show section
-        const next = $('#game-'+id);
-        if(!next) return;
-        if(currentGame){ const prev = $('#game-'+currentGame); if(prev) prev.hidden = true; document.body.classList.remove('game-'+currentGame); }
-        next.hidden = false; next.classList.add('page-fade'); setTimeout(()=>next.classList.remove('page-fade'), 320);
-        const g = GAMES.find(x=>x.id===id); titleEl.textContent = g?g.name:'Casino';
-        document.body.classList.add('game-'+id);
-        currentGame = id;
-      }
-      showGame('blackjack');
-
-      // Reset bank
-  $('#reset-bank').addEventListener('click', ()=>{ bankroll = START_BANK; credit(0); Sound.play('click'); });
-  $('#toggle-sidebar').addEventListener('click', ()=>{ document.querySelector('aside').classList.toggle('collapsed'); });
-  $('#motion-toggle').addEventListener('click', ()=>{ document.body.classList.toggle('reduce-motion'); });
+      // Header controls
+      $('#reset-bank').addEventListener('click', ()=>{ bankroll = START_BANK; credit(0); Sound.play('click'); });
+      $('#motion-toggle').addEventListener('click', ()=>{ document.body.classList.toggle('reduce-motion'); });
 
       // ----------------- Sound Manager -----------------
       const MUTE_KEY = 'casino_mute_v1';
       const MuteBtn = $('#mute-toggle');
       const Sound = (()=>{
-        let ctx=null; let muted = loadMute();
-        function loadMute(){ try{ return localStorage.getItem(MUTE_KEY)==='1'; }catch{} return false; }
+        let ctx=null; let muted = (function(){ try{ return localStorage.getItem(MUTE_KEY)==='1'; }catch{} return false; })();
         function saveMute(){ try{ localStorage.setItem(MUTE_KEY, muted?'1':'0'); }catch{} }
         function ensure(){ if(!ctx){ const AC = window.AudioContext||window.webkitAudioContext; try{ ctx=new AC(); }catch{} } }
         function envGain(g){ const gain=ctx.createGain(); gain.gain.value=g; gain.connect(ctx.destination); return gain; }
@@ -361,15 +196,14 @@
         function lose(){ tone(220,0.18,'sawtooth',0.05); }
         function deal(){ tone(520,0.06,'triangle',0.04); }
         function cash(){ tone(740,0.08,'square',0.05); setTimeout(()=>tone(990,0.1,'square',0.05),80); }
+        function updateBtn(){ MuteBtn.setAttribute('aria-pressed', muted?'true':'false'); MuteBtn.textContent = muted ? '🔇' : '🔊'; }
+        updateBtn();
         return {
           toggle(){ ensure(); muted=!muted; saveMute(); updateBtn(); },
           play(name){ ensure(); if(muted) return; if(name==='click') click(); else if(name==='win') win(); else if(name==='lose') lose(); else if(name==='deal') deal(); else if(name==='cash') cash(); },
           muted(){ return muted; }
         }
-        function updateBtn(){ MuteBtn.setAttribute('aria-pressed', muted?'true':'false'); MuteBtn.textContent = muted ? '🔇 Stumm' : '🔊 Ton'; }
       })();
-      // initialize mute button
-      (function initMute(){ try{ const isMuted = localStorage.getItem(MUTE_KEY)==='1'; MuteBtn.setAttribute('aria-pressed', isMuted?'true':'false'); MuteBtn.textContent = isMuted ? '🔇 Stumm' : '🔊 Ton'; }catch{} })();
       MuteBtn.addEventListener('click', ()=>Sound.toggle());
 
       // ----------------- Confetti FX -----------------
@@ -386,7 +220,7 @@
         return { burst };
       })();
 
-      // ----------------- Blackjack (reusing logic) -----------------
+      // ----------------- Blackjack -----------------
       const BJ = (()=>{
         const START_DECKS = 6; const MIN_BET = 5; const BJ_PAY = 1.5; const DEALER_HITS_SOFT_17=false;
         let shoe=[]; let state='betting'; let hideHole=true; let doubled=false;
@@ -400,7 +234,6 @@
           deal: $('#bj-deal'), hit: $('#bj-hit'), stand: $('#bj-stand'), dbl: $('#bj-double'), next: $('#bj-new')
         };
 
-        // deck
         function newShoe(){ shoe=createShoe(START_DECKS); shuffle(shoe); }
         function createShoe(n){ const suits=['♠','♥','♦','♣']; const ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K']; const S=[]; for(let d=0; d<n; d++){ for(const s of suits){ for(const r of ranks){ S.push({suit:s, rank:r}); } } } return S; }
         function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
@@ -410,7 +243,7 @@
         function detail(hand){ let t=0,a=0; for(const c of hand){ if(c.rank==='A'){t+=11;a++;} else if(['K','Q','J'].includes(c.rank)) t+=10; else t+=Number(c.rank);} while(t>21&&a>0){t-=10;a--;} return {total:t, soft:a>0&&t<=21}; }
         function isBJ(hand){ return hand.length===2 && score(hand)===21; }
 
-        function render(){ // hands
+        function render(){
           renderHand(el.pCards, player, false); el.pScore.textContent = label(player);
           renderHand(el.dCards, dealer, hideHole); el.dScore.textContent = hideHole? hiddenLabel(dealer) : label(dealer);
           if(!hideHole){ flipHole(); }
@@ -418,10 +251,10 @@
         }
         function label(h){ const {total,soft}=detail(h); return soft&&total<=21?`${total} (soft)`:String(total); }
         function hiddenLabel(h){ if(!h.length) return '–'; const v=score([h[0]]); return `${v} + ?`; }
-  function renderHand(container, hand, hide){ container.innerHTML=''; hand.forEach((c,i)=>{ const wrap=document.createElement('div'); wrap.style.display='inline-block'; wrap.style.transform=`rotate(${(i - (hand.length-1)/2)*2}deg)`; const n = hide&&i===0? backCard() : cardEl(c); n.classList.add('slide-in'); wrap.appendChild(n); container.appendChild(wrap); }); }
+        function renderHand(container, hand, hide){ container.innerHTML=''; hand.forEach((c,i)=>{ const wrap=document.createElement('div'); wrap.style.display='inline-block'; wrap.style.transform=`rotate(${(i - (hand.length-1)/2)*2}deg)`; const n = hide&&i===0? backCard() : cardEl(c); n.classList.add('slide-in'); wrap.appendChild(n); container.appendChild(wrap); }); }
         function cardEl(c){ const red=(c.suit==='♥'||c.suit==='♦')?'red':''; const el=document.createElement('div'); el.className='card'; el.innerHTML=`<div class="pips"><span class="${red}">${c.rank}</span><span class="suit ${red}">${c.suit}</span></div><div class="center ${red}">${['J','Q','K','A'].includes(c.rank)?c.suit:c.rank}</div><div class="pips" style="opacity:.65"><span class="${red}">${c.suit}</span><span class="${red}">${c.rank}</span></div>`; return el; }
         function backCard(){ const el=document.createElement('div'); el.className='card back'; return el; }
-  function flipHole(){ const first = el.dCards.firstElementChild; if(first && !first.classList.contains('back')){ first.classList.add('flip-in'); setTimeout(()=>first.classList.remove('flip-in'), 300); } }
+        function flipHole(){ const first = el.dCards.firstElementChild; if(first && !first.classList.contains('back')){ first.classList.add('flip-in'); setTimeout(()=>first.classList.remove('flip-in'), 300); } }
 
         function setMsg(t){ el.msg.textContent=t||''; }
         const btnMinus = $('#bj-bet-minus'), btnPlus=$('#bj-bet-plus'), btnHalf=$('#bj-bet-half'), btnBetDbl=$('#bj-bet-double'), btnMax=$('#bj-bet-max');
@@ -430,14 +263,13 @@
           const turn=state==='player'; el.hit.disabled=!turn; el.stand.disabled=!turn; el.dbl.disabled=!turn || doubled || player.length!==2 || bankroll<bet; el.next.style.display = state==='round'?'inline-block':'none'; }
         function setBet(v){ bet = Math.max(0, Math.min(v, bankroll)); render(); setUI(); if(bet>0 && bet<MIN_BET) setMsg('Mindesteinsatz $'+MIN_BET); else setMsg(''); }
 
-        // events
         el.chips.forEach(b=> b.addEventListener('click', ()=> setBet(bet + Number(b.dataset.bjchip))));
-  el.clear.addEventListener('click', ()=> setBet(0));
-  btnMinus.addEventListener('click', ()=> setBet(bet-5));
-  btnPlus.addEventListener('click', ()=> setBet(bet+5));
-  btnHalf.addEventListener('click', ()=> setBet(Math.floor(bet/2)));
-  btnBetDbl.addEventListener('click', ()=> setBet(Math.min(bankroll, bet*2)));
-  btnMax.addEventListener('click', ()=> setBet(bankroll));
+        el.clear.addEventListener('click', ()=> setBet(0));
+        btnMinus.addEventListener('click', ()=> setBet(bet-5));
+        btnPlus.addEventListener('click', ()=> setBet(bet+5));
+        btnHalf.addEventListener('click', ()=> setBet(Math.floor(bet/2)));
+        btnBetDbl.addEventListener('click', ()=> setBet(Math.min(bankroll, bet*2)));
+        btnMax.addEventListener('click', ()=> setBet(bankroll));
         el.deal.addEventListener('click', ()=>{
           if(bet<MIN_BET) { setMsg('Mindesteinsatz $'+MIN_BET); return; }
           if(bet>bankroll){ setMsg('Zu wenig Guthaben'); return; }
@@ -453,9 +285,8 @@
           setMsg('Dein Zug.'); setUI();
         });
         el.hit.addEventListener('click', ()=>{ if(state!=='player') return; player.push(draw()); Sound.play('click'); render(); if(score(player)>21){ state='round'; hideHole=false; setMsg('Bust – Verlust.'); Sound.play('lose'); } setUI(); });
-        el.stand.addEventListener('click', ()=>{ if(state!=='player') return; state='dealer'; hideHole=false; Sound.play('click'); // dealer play
+        el.stand.addEventListener('click', ()=>{ if(state!=='player') return; state='dealer'; hideHole=false; Sound.play('click');
           let safe=0; while(true){ const {total,soft}=detail(dealer); const mustHit = total<17 || (DEALER_HITS_SOFT_17 && total===17 && soft); if(!mustHit) break; dealer.push(draw()); if(++safe>20) break; }
-          // settle
           state='round'; const p=score(player), d=score(dealer); if(p>21){ setMsg('Bust – Verlust.'); Sound.play('lose'); }
           else if(d>21){ credit(wager*2); setMsg('Dealer bust – Gewinn '+fmt(wager)); Sound.play('win'); if(wager>=100) FX.burst(1.0); }
           else if(p>d){ credit(wager*2); setMsg('Gewinn '+fmt(wager)); Sound.play('win'); if(wager>=100) FX.burst(0.9); }
@@ -467,113 +298,8 @@
         el.next.addEventListener('click', ()=>{ state='betting'; hideHole=true; doubled=false; player=[]; dealer=[]; wager=0; setMsg('Einsatz wählen.'); render(); setUI(); });
         document.addEventListener('keydown', (e)=>{ if(state==='player'){ const k=e.key.toLowerCase(); if(k==='h') el.hit.click(); if(k==='s') el.stand.click(); if(k==='d') el.dbl.click(); } });
 
-        // init
         newShoe(); setBet(0); setMsg('Einsatz wählen.'); render(); setUI();
         return {};
-      })();
-
-      // ----------------- Roulette -----------------
-      (()=>{
-  const betIn = $('#rl-bet'); const typeSel = $('#rl-type'); const numberWrap=$('#rl-number-wrap'); const numberIn=$('#rl-number');
-        const spinBtn = $('#rl-spin'); const outEl=$('#rl-result'); const colorEl=$('#rl-color'); const msg=$('#rl-msg'); const wheel=$('#rl-wheel');
-        typeSel.addEventListener('change', ()=>{ numberWrap.hidden = typeSel.value!=='number'; });
-        function color(n){ if(n===0) return 'grün'; const reds=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]; return reds.includes(n)?'rot':'schwarz'; }
-        function spin(){ return Math.floor(Math.random()*37); }
-        spinBtn.addEventListener('click', ()=>{
-          const bet = Math.max(1, Math.floor(Number(betIn.value)||0)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
-          const type = typeSel.value; const pick = Math.floor(Number(numberIn.value)||0);
-          credit(-bet);
-          // animate spinning
-          wheel.classList.remove('hide'); outEl.textContent='–'; colorEl.textContent='–'; msg.textContent='Dreht…'; spinBtn.disabled=true; betIn.disabled=true; typeSel.disabled=true; numberIn.disabled=true;
-          setTimeout(()=>{
-            const n = spin(); const c = color(n);
-            wheel.classList.add('hide');
-            outEl.textContent=String(n); outEl.classList.add('pop'); setTimeout(()=>outEl.classList.remove('pop'), 400);
-            colorEl.textContent=c; let win=0;
-            if(type==='red' && c==='rot') win=bet*2; else if(type==='black' && c==='schwarz') win=bet*2; else if(type==='odd' && n!==0 && (n%2===1)) win=bet*2; else if(type==='even' && n!==0 && (n%2===0)) win=bet*2; else if(type==='number' && pick===n) win=bet*36;
-            if(win>0){ credit(win); msg.textContent='Gewinn '+fmt(win-bet)+' (Auszahlung '+fmt(win)+')'; if(type==='number') { FX.burst(1.3); } Sound.play('win'); }
-            else { msg.textContent='Verlust.'; Sound.play('lose'); }
-            spinBtn.disabled=false; betIn.disabled=false; typeSel.disabled=false; numberIn.disabled=false;
-          }, 1500);
-        });
-      })();
-
-      // ----------------- Slots -----------------
-      (()=>{
-        const betIn=$('#sl-bet'); const spinBtn=$('#sl-spin'); const reelsEl=$('#sl-reels'); const msg=$('#sl-msg');
-        const SYM=['🍒','🔔','🍋','⭐','7️⃣'];
-        function randSym(){ return SYM[Math.floor(Math.random()*SYM.length)]; }
-        function spinGrid(){ return Array.from({length:3}, ()=> Array.from({length:3}, ()=> randSym())); }
-        function renderGrid(g){ const cells=reelsEl.querySelectorAll('.reel'); let i=0; for(const r of g){ for(const s of r){ const cell=cells[i++]; cell.textContent=s; } } }
-        function payout(line){ if(line.every(x=>x==='7️⃣')) return 10; if(line.every(x=>x==='⭐')) return 5; if(line.every(x=>x==='🔔')) return 3; if(line.every(x=>x==='🍒')||line.every(x=>x==='🍋')) return 2; return 0; }
-        function highlightWins(grid){ const cells=[...reelsEl.querySelectorAll('.reel')]; const rows=[[0,1,2],[3,4,5],[6,7,8]]; rows.forEach((idxs,ri)=>{ const line=grid[ri]; const mult=payout(line); if(mult>0){ idxs.forEach(i=>cells[i].classList.add('win')); setTimeout(()=>idxs.forEach(i=>cells[i].classList.remove('win')), 1000); } }); }
-        function animateSpin(finalGrid, bet){ const cells=[...reelsEl.querySelectorAll('.reel')]; // blur during spin
-          cells.forEach(c=>c.classList.add('blur'));
-          spinBtn.disabled=true; betIn.disabled=true; msg.textContent='Dreht…';
-          const timers=[]; const colStops=[700, 1000, 1300];
-          for(let col=0; col<3; col++){
-            const colIdx=[col, col+3, col+6];
-            const t = setInterval(()=>{ colIdx.forEach(i=>{ cells[i].textContent = randSym(); }); }, 60);
-            timers.push(t);
-            setTimeout(()=>{ clearInterval(t); // set final column
-              for(let r=0;r<3;r++){ const i=colIdx[r]; cells[i].textContent = finalGrid[r][col]; }
-              if(col===2){ // all stopped
-                cells.forEach(c=>c.classList.remove('blur'));
-                // compute payout
-                const lines=[finalGrid[0], finalGrid[1], finalGrid[2]]; let mult=0; lines.forEach(l=>mult+=payout(l)); const win=bet*mult;
-                if(win>0){ credit(win); msg.textContent='Gewinn '+fmt(win-bet)+' (x'+mult+')'; highlightWins(finalGrid); Sound.play('win'); if(mult>=5) FX.burst(1.0); } else { msg.textContent='Keine Linie – Verlust.'; Sound.play('lose'); }
-                spinBtn.disabled=false; betIn.disabled=false;
-              }
-            }, colStops[col]);
-          }
-        }
-        spinBtn.addEventListener('click', ()=>{
-          const bet=Math.max(1, Math.floor(Number(betIn.value)||0)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
-          credit(-bet); Sound.play('click');
-          const grid=spinGrid(); animateSpin(grid, bet);
-        });
-      })();
-
-      // ----------------- Dice -----------------
-      (()=>{
-        const betIn=$('#dc-bet'); const chanceIn=$('#dc-chance'); const rollBtn=$('#dc-roll'); const outEl=$('#dc-roll-out'); const quoteEl=$('#dc-quote'); const msg=$('#dc-msg');
-        function updateQuote(){ const ch=Math.min(95, Math.max(1, Number(chanceIn.value)||50)); const q = 0.99 / (ch/100); quoteEl.textContent = q.toFixed(2)+'x'; }
-        chanceIn.addEventListener('input', updateQuote); updateQuote();
-        rollBtn.addEventListener('click', ()=>{
-          const bet=Math.max(1, Math.floor(Number(betIn.value)||0)); const ch=Math.min(95, Math.max(1, Number(chanceIn.value)||50)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
-          credit(-bet); Sound.play('click');
-          // animate quick rolling
-          rollBtn.disabled=true; betIn.disabled=true; chanceIn.disabled=true; msg.textContent='Würfelt…'; outEl.classList.add('shake');
-          let t=0; const it = setInterval(()=>{ const tmp = (Math.random()*100).toFixed(2)+'%'; outEl.textContent=tmp; if((t+=80)>=800){ clearInterval(it); outEl.classList.remove('shake');
-              const r = Math.random()*100; outEl.textContent=r.toFixed(2)+'%'; const win = r < ch; const mult = 0.99/(ch/100);
-              if(win){ const payout = Math.floor(bet*mult); credit(payout); msg.textContent='Gewinn '+fmt(payout-bet)+' ('+mult.toFixed(2)+'x)'; Sound.play('win'); if(mult>=4) FX.burst(0.9); } else { msg.textContent='Verlust.'; Sound.play('lose'); }
-              rollBtn.disabled=false; betIn.disabled=false; chanceIn.disabled=false;
-          } }, 80);
-        });
-      })();
-
-      // ----------------- Crash -----------------
-      (()=>{
-        const betIn=$('#cr-bet'); const startBtn=$('#cr-start'); const cashBtn=$('#cr-cash'); const multEl=$('#cr-mult'); const statusEl=$('#cr-status'); const msg=$('#cr-msg');
-        let timer=null; let mult=1.0; let target=0; let active=false; let cashed=false; let bet=0;
-        function randomCrash(){ // heavy bias to low values
-          const r = Math.random(); return Math.max(1.01, Math.pow(1/(1-r), 0.35)); }
-        function reset(){ if(timer){ clearInterval(timer); timer=null; } mult=1.0; target=0; active=false; cashed=false; startBtn.disabled=false; cashBtn.disabled=true; multEl.textContent='1.00x'; statusEl.textContent='Bereit'; statusEl.className='muted'; }
-        reset();
-        startBtn.addEventListener('click', ()=>{
-          bet = Math.max(1, Math.floor(Number(betIn.value)||0)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
-          credit(-bet); Sound.play('click'); target=randomCrash(); active=true; cashed=false; startBtn.disabled=true; cashBtn.disabled=false; msg.textContent=''; statusEl.textContent='LIVE'; statusEl.className='crash live';
-          timer=setInterval(()=>{
-            mult = +(mult*1.02).toFixed(2); multEl.textContent=mult.toFixed(2)+'x';
-            if(mult>=target){ // bust
-              clearInterval(timer); timer=null; active=false; cashBtn.disabled=true; statusEl.textContent='BUST'; statusEl.className='crash busted';
-              if(!cashed){ msg.textContent='Bust – Verlust.'; Sound.play('lose'); }
-            }
-          }, 120);
-        });
-        cashBtn.addEventListener('click', ()=>{
-          if(!active||cashed) return; cashed=true; const payout=Math.floor(bet*mult); credit(payout); msg.textContent='Cash Out '+fmt(payout-bet)+' ('+mult.toFixed(2)+'x)'; Sound.play('cash'); if(mult>=5 || (payout-bet)>=100) FX.burst(1.1); reset();
-        });
       })();
     </script>
   </body>
