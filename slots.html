@@ -126,7 +126,17 @@
           }, colStops[col]);
         }
       }
-      spinBtn.addEventListener('click', ()=>{ const bet=Math.max(1, Math.floor(Number(betIn.value)||0)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; } credit(-bet); Sound.play('click'); const grid=spinGrid(); animateSpin(grid, bet); });
+      function getBet(){ const n = Math.floor(Number(betIn.value)); return Number.isFinite(n) && n>0 ? n : 1; }
+      spinBtn.addEventListener('click', ()=>{
+        if(spinBtn.disabled) return;
+        let bet = getBet();
+        if(bet>bankroll){
+          if(bankroll===0){ bankroll = START_BANK; credit(0); msg.textContent = 'Guthaben aufgefüllt: '+fmt(START_BANK); }
+          else { msg.textContent='Zu wenig Guthaben.'; return; }
+        }
+        credit(-bet); Sound.play('click');
+        const grid=spinGrid(); animateSpin(grid, bet);
+      });
     </script>
   </body>
 </html>
