@@ -46,12 +46,26 @@
         radial-gradient(140px 100px at 50% 30%, rgba(255,255,255,.06), rgba(0,0,0,.22));
         box-shadow: inset 0 0 60px rgba(0,0,0,.35), 0 8px 26px rgba(0,0,0,.25);
         position: relative; overflow: hidden; }
+      /* Bildsymbol-Overlay */
+      .cell::after{ content:''; position:absolute; inset:10px; background: var(--sym-img) center/contain no-repeat; pointer-events:none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+      /* Fallback-Text, wenn kein Bild vorhanden ist */
+      .cell[data-has-img="true"] .txt{ display:none }
+      .cell .txt{ font-size:46px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); }
       .cell .glyph { font-size:46px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); }
       .cell .label { position:absolute; bottom:6px; right:8px; font-size:11px; color: rgba(255,255,255,.7) }
       .cell.wild { border-color: rgba(245,158,11,.45); box-shadow: 0 0 16px rgba(245,158,11,.35), inset 0 0 60px rgba(245,158,11,.15); }
       .cell.scatter { border-color: rgba(225,29,72,.45); box-shadow: 0 0 16px rgba(225,29,72,.35), inset 0 0 60px rgba(225,29,72,.15); }
       .cell.win { outline: 3px solid rgba(255,255,255,.35); animation: glow 600ms ease-in-out alternate 3; }
       @keyframes glow { from { box-shadow: 0 0 0 rgba(255,255,255,0); } to { box-shadow: 0 0 26px rgba(255,255,255,.35); } }
+
+  /* Enhanced spin visuals */
+  .reel.spinning { filter: saturate(1.15) contrast(1.05); }
+  .reel.spinning .cell { animation: spinJitter 140ms linear infinite; filter: blur(0.4px) brightness(1.08); }
+  @keyframes spinJitter { 0%{ transform: translateY(-2px) } 50%{ transform: translateY(2px) } 100%{ transform: translateY(-2px) } }
+  .cell.pop { animation: popIn 220ms cubic-bezier(.2,.8,.3,1); }
+  @keyframes popIn { 0%{ transform: scale(.85); opacity:.4 } 80%{ transform: scale(1.04) } 100%{ transform: scale(1); opacity:1 } }
+  .cell.win { animation: winPulse 900ms ease-in-out infinite; }
+  @keyframes winPulse { 0%{ box-shadow: 0 0 0 rgba(255,215,96,0); outline-color: rgba(255,215,96,.0) } 50%{ box-shadow: 0 0 24px rgba(255,215,96,.35); outline-color: rgba(255,215,96,.6) } 100%{ box-shadow: 0 0 0 rgba(255,215,96,0); outline-color: rgba(255,215,96,.0) } }
 
       .controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center; }
       .btn { background: var(--accent-2); color:#1b1000; border: none; padding: 10px 14px; border-radius:10px; font-weight:800; cursor:pointer; box-shadow: 0 6px 16px rgba(245,158,11,.35) }
@@ -75,7 +89,12 @@
       .paygrid { display:grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top:10px; }
       .badge { padding:2px 8px; border-radius:999px; background: rgba(255,255,255,0.08); font-size:12px }
 
-  #fx-canvas{ position:absolute; inset:0; pointer-events:none; z-index: 0 }
+  #fx-canvas{ position:absolute; inset:0; pointer-events:none; z-index: 3 }
+
+  /* Big win banner */
+  #bigwin{ position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; z-index:4; opacity:0; transform: scale(.9); transition: all 260ms ease; }
+  #bigwin .inner{ font-weight:900; font-size:48px; color:#ffd166; text-shadow: 0 2px 6px rgba(0,0,0,.5), 0 0 24px rgba(255,209,102,.35); padding:10px 18px; border:2px solid rgba(255,209,102,.5); border-radius:14px; background: rgba(0,0,0,.25); }
+  #bigwin.show{ opacity:1; transform: scale(1); }
     </style>
   </head>
   <body>
@@ -105,30 +124,31 @@
 
       <section class="panel reels-wrap">
         <div class="reels" id="reels">
+          <div id="bigwin" aria-hidden="true"><div class="inner">BIG WIN</div></div>
           <div class="reel" data-reel="0">
-            <div class="cell" row="0"></div>
-            <div class="cell" row="1"></div>
-            <div class="cell" row="2"></div>
+            <div class="cell" row="0"><div class="txt"></div></div>
+            <div class="cell" row="1"><div class="txt"></div></div>
+            <div class="cell" row="2"><div class="txt"></div></div>
           </div>
           <div class="reel" data-reel="1">
-            <div class="cell" row="0"></div>
-            <div class="cell" row="1"></div>
-            <div class="cell" row="2"></div>
+            <div class="cell" row="0"><div class="txt"></div></div>
+            <div class="cell" row="1"><div class="txt"></div></div>
+            <div class="cell" row="2"><div class="txt"></div></div>
           </div>
           <div class="reel" data-reel="2">
-            <div class="cell" row="0"></div>
-            <div class="cell" row="1"></div>
-            <div class="cell" row="2"></div>
+            <div class="cell" row="0"><div class="txt"></div></div>
+            <div class="cell" row="1"><div class="txt"></div></div>
+            <div class="cell" row="2"><div class="txt"></div></div>
           </div>
           <div class="reel" data-reel="3">
-            <div class="cell" row="0"></div>
-            <div class="cell" row="1"></div>
-            <div class="cell" row="2"></div>
+            <div class="cell" row="0"><div class="txt"></div></div>
+            <div class="cell" row="1"><div class="txt"></div></div>
+            <div class="cell" row="2"><div class="txt"></div></div>
           </div>
           <div class="reel" data-reel="4">
-            <div class="cell" row="0"></div>
-            <div class="cell" row="1"></div>
-            <div class="cell" row="2"></div>
+            <div class="cell" row="0"><div class="txt"></div></div>
+            <div class="cell" row="1"><div class="txt"></div></div>
+            <div class="cell" row="2"><div class="txt"></div></div>
           </div>
         </div>
       </section>
@@ -144,6 +164,7 @@
           <button class="btn" id="maxBtn">MAX</button>
           <button class="btn primary" id="spinBtn">SPIN</button>
           <button class="btn ghost" id="autoBtn" aria-pressed="false">AUTO</button>
+          <button class="btn ghost" id="turboBtn" aria-pressed="false">Turbo</button>
           <button class="btn ghost" id="paytableBtn">Paytable</button>
         </div>
         <div class="msg" id="msg"></div>
@@ -172,6 +193,20 @@
         const SYMBOLS = ['TIGER', 'SCATTER', 'DRAGON', 'COIN', 'A', 'K', 'Q', 'J', '10', '9'];
         const WILD = 'TIGER';
         const SCATTER = 'SCATTER';
+
+        // Optional: Lokale/remote Symbolbilder. Lege Dateien in assets/symbols/ ab oder setze externe URLs.
+        // Hinweis: Bitte nur lizenzfreie/erlaubte Assets nutzen. Default: leer -> es wird Emoji/Text verwendet.
+        const ICONS = {
+          // Beispiel lokale Pfade:
+          // TIGER: 'assets/symbols/sym_TIGER.png',
+          // SCATTER: 'assets/symbols/sym_SCATTER.png',
+          // DRAGON: 'assets/symbols/sym_DRAGON.png',
+          // COIN: 'assets/symbols/sym_COIN.png',
+          // A: 'assets/symbols/sym_A.png', K:'assets/symbols/sym_K.png', Q:'assets/symbols/sym_Q.png', J:'assets/symbols/sym_J.png',
+          // '10':'assets/symbols/sym_10.png', '9':'assets/symbols/sym_9.png'
+        };
+        // Fallback-Glyphen (Emoji/Text) falls kein Bild konfiguriert ist
+        const GLYPHS = { TIGER:'🐯', SCATTER:'☯', DRAGON:'🐉', COIN:'🪙', A:'A', K:'K', Q:'Q', J:'J', '10':'10', '9':'9' };
 
         const paytable = {
           DRAGON: { 3: 10, 4: 50, 5: 200 },
@@ -215,13 +250,17 @@
           spinBtn:      $('#spinBtn'),
           maxBtn:       $('#maxBtn'),
           autoBtn:      $('#autoBtn'),
+          turboBtn:     $('#turboBtn'),
           betInput:     $('#betInput'),
           linesDisplay: $('#linesDisplay'),
           totalBet:     $('#totalBet'),
           balance:      $('#balance'),
           lastWin:      $('#lastWin'),
           paytableBtn:  $('#paytableBtn'),
-          reels:        $$('.reel[data-reel]')
+          reels:        $$('.reel[data-reel]'),
+          msg:          $('#msg'),
+          bigwin:       $('#bigwin'),
+          fxCanvas:     document.getElementById('fx-canvas')
         };
 
         function validateReelsStructure() {
@@ -240,7 +279,8 @@
           auto: false,
           autoSpinsDone: 0,
           spinning: false,
-          freeSpins: 0
+          freeSpins: 0,
+          turbo: false
         };
 
         const baseWeights = {
@@ -303,10 +343,20 @@
           if (!reelEl) return;
           const cell = reelEl.querySelector(`.cell[row="${row}"]`);
           if (!cell) return;
-          cell.textContent = symbol;
+          const txt = cell.querySelector('.txt');
           cell.setAttribute('data-symbol', symbol);
           cell.className = 'cell';
           cell.classList.add(`sym-${symbol}`);
+          const url = ICONS[symbol];
+          if (url) {
+            cell.style.setProperty('--sym-img', `url("${url}")`);
+            cell.setAttribute('data-has-img','true');
+            if (txt) txt.textContent = '';
+          } else {
+            cell.style.removeProperty('--sym-img');
+            cell.removeAttribute('data-has-img');
+            if (txt) txt.textContent = GLYPHS[symbol] || symbol;
+          }
         }
 
         function renderGrid(grid) {
@@ -332,16 +382,59 @@
             intervals.push(iv);
           });
           return new Promise((resolve) => {
-            SPIN_DELAYS_MS.forEach((ms, reelIdx) => {
+            const delays = state.turbo ? [300, 450, 600, 750, 900] : SPIN_DELAYS_MS;
+            delays.forEach((ms, reelIdx) => {
               setTimeout(() => {
                 clearInterval(intervals[reelIdx]);
-                for (let row=0; row<3; row++) setCell(reelIdx, row, finalGrid[reelIdx][row]);
+                for (let row=0; row<3; row++) {
+                  setCell(reelIdx, row, finalGrid[reelIdx][row]);
+                  const cell = els.reels[reelIdx].querySelector(`.cell[row="${row}"]`);
+                  if (cell) { cell.classList.remove('pop'); void cell.offsetWidth; cell.classList.add('pop'); }
+                }
                 els.reels[reelIdx].classList.remove('spinning');
                 els.reels[reelIdx].removeAttribute('data-state');
                 if (reelIdx === 4) resolve();
               }, ms);
             });
           });
+        }
+
+        // Confetti FX
+        const FX = (() => {
+          const canvas = els.fxCanvas;
+          if (!canvas) return { burst: () => {} };
+          const ctx = canvas.getContext('2d');
+          let ps = []; let running = false; let raf = 0;
+          function resize(){ const r=canvas.getBoundingClientRect(); const dpr=Math.max(1, window.devicePixelRatio||1); canvas.width=Math.floor(r.width*dpr); canvas.height=Math.floor(r.height*dpr); }
+          window.addEventListener('resize', resize); resize();
+          const colors=['#f59e0b','#e11d48','#10b981','#a78bfa','#22d3ee','#ef4444'];
+          function spawn(n){ const w=canvas.width,h=canvas.height; const dpr=Math.max(1, window.devicePixelRatio||1); for(let i=0;i<n;i++){ ps.push({ x:w/2+(Math.random()*w/3-w/6), y:h*0.25, vx:(Math.random()-0.5)*3*dpr, vy:(-2-Math.random()*2)*dpr, g:0.07*dpr, s:(2+Math.random()*3)*dpr, c:colors[Math.floor(Math.random()*colors.length)], a:1, rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.2 }); } }
+          function step(){ if(!running) return; const w=canvas.width,h=canvas.height; ctx.clearRect(0,0,w,h); ps.forEach(p=>{ p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.a=Math.max(0,p.a-0.006); ctx.save(); ctx.globalAlpha=p.a; ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c; ctx.fillRect(-p.s,-p.s/2,p.s*2,p.s); ctx.restore(); }); ps=ps.filter(p=>p.y<h+40&&p.a>0.02); if(ps.length===0){ running=false; cancelAnimationFrame(raf); ctx.clearRect(0,0,w,h); return; } raf=requestAnimationFrame(step); }
+          function burst(intensity=1){ resize(); spawn(Math.floor(160*intensity)); if(!running){ running=true; step(); } }
+          return { burst };
+        })();
+
+        function clearHighlights() {
+          els.reels.forEach(reel => reel.querySelectorAll('.cell.win').forEach(c => c.classList.remove('win')));
+        }
+
+        function highlightWins(lineWins) {
+          lineWins.forEach(w => {
+            const pat = paylines[w.lineIndex];
+            for (let reel=0; reel<w.count; reel++) {
+              const row = pat[reel];
+              const reelEl = els.reels[reel];
+              const cell = reelEl?.querySelector(`.cell[row="${row}"]`);
+              if (cell) cell.classList.add('win');
+            }
+          });
+        }
+
+        function showBigWin(amount) {
+          if (!els.bigwin) return;
+          els.bigwin.querySelector('.inner').textContent = `BIG WIN • ${amount.toLocaleString('de-DE')}`;
+          els.bigwin.classList.add('show');
+          setTimeout(() => els.bigwin.classList.remove('show'), 2000);
         }
 
         function payoutFor(symbol, count, betPerLine) {
@@ -443,6 +536,7 @@
 
         async function spinHandler({ viaAuto=false } = {}) {
           if (state.spinning) return;
+          clearHighlights();
           state.betPerLine = clampBet(Number(els.betInput.value));
           const totalBet = state.betPerLine * LINES;
           if (state.freeSpins <= 0) {
@@ -462,6 +556,15 @@
 
           const res = evalWin(finalGrid, state.betPerLine);
           state.balance += res.totalWin;
+          if (res.totalWin > 0) {
+            highlightWins(res.paylineWins);
+            // FX thresholds
+            if (res.totalWin >= totalBet * 20) { FX.burst(1.0); showBigWin(res.totalWin); }
+            else if (res.totalWin >= totalBet * 8) { FX.burst(0.6); }
+            els.msg && (els.msg.textContent = `Gewinn: ${res.totalWin.toLocaleString('de-DE')}`);
+          } else {
+            els.msg && (els.msg.textContent = state.freeSpins>0 ? 'Free Spin – kein Gewinn' : 'Kein Gewinn');
+          }
           if (res.freeSpinsAwarded > 0) state.freeSpins += res.freeSpinsAwarded;
           else if (state.freeSpins > 0) state.freeSpins -= 1;
 
@@ -486,6 +589,7 @@
           els.maxBtn.addEventListener('click', () => { els.betInput.value = String(MAX_BET_PER_LINE); updateTotals(); if (!canAffordSpin() && state.freeSpins <= 0) return; spinHandler(); });
           els.autoBtn.addEventListener('click', () => { state.auto = !state.auto; state.autoSpinsDone = 0; els.autoBtn.setAttribute('aria-pressed', state.auto?'true':'false'); if (state.auto && !state.spinning && canAffordSpin()) spinHandler({ viaAuto: true }); });
           els.paytableBtn?.addEventListener('click', () => { console.info('Paytable öffnen (Modal-Stub).'); });
+          els.turboBtn?.addEventListener('click', () => { state.turbo = !state.turbo; els.turboBtn.setAttribute('aria-pressed', state.turbo?'true':'false'); });
 
           // Optional: Reset Button des Headers falls vorhanden
           const resetBtn = document.getElementById('reset-bank');
