@@ -7,8 +7,8 @@
     <style>
       :root { --bg:#0a0f12; --panel:#0e1520; --muted:#9aa4b2; --text:#e6edf3; --accent:#22d3ee; --accent-2:#0ea5e9; --danger:#ef4444; --ok:#10b981; --gold:#ffd166; }
       *{box-sizing:border-box}
-      html, body { height: 100%; }
-      body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: radial-gradient(1200px 800px at 50% -10%, #0e1b2a, #081018 60%, #050a10 100%); color: var(--text); }
+  html, body { height:100%; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: radial-gradient(1200px 800px at 50% -10%, #0e1b2a, #081018 60%, #050a10 100%); color: var(--text); min-height:100vh; display:flex; flex-direction:column; }
       body.reduce-motion * { animation: none !important; transition: none !important; }
 
       .topbar { display:flex; align-items:center; gap:12px; justify-content:space-between; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.06); background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); position: sticky; top: 0; backdrop-filter: blur(6px); }
@@ -21,8 +21,8 @@
       .balance { display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:12px; }
       .balance .amount { color: var(--gold); font-weight:800; }
 
-      main { padding: 16px; display:grid; gap:16px; position: relative; max-width: 900px; margin: 0 auto; }
-      .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; }
+  main { padding:16px; display:flex; flex-direction:column; gap:16px; position:relative; width:100%; max-width:none; margin:0; flex:1; }
+  .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:16px; margin-left:0; flex:1; display:flex; flex-direction:column; }
       .controls { display:flex; gap: 10px; flex-wrap:wrap; align-items:center }
       .input { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); color: var(--text); padding:8px 10px; border-radius:10px }
       .btn { background: var(--accent-2); color:#001018; border: none; padding: 10px 14px; border-radius:10px; font-weight:700; cursor:pointer; box-shadow: 0 6px 16px rgba(14,165,233,.35) }
@@ -48,6 +48,33 @@
       .pop { animation: popIn 350ms ease-out; }
 
       #fx-canvas{ position:absolute; inset:0; pointer-events:none }
+
+    /* --- Betting Mat Only --- */
+  .roulette-layout { display:grid; grid-template-columns: 1fr 360px; gap:24px; margin-top:14px; flex:1; align-items:start; }
+  @media (max-width: 980px){ .roulette-layout { grid-template-columns:1fr; } .wheel-side{order:-1;} }
+  /* Force betting area left alignment */
+  .betting-area { width:100%; }
+
+  /* Betting mat (restored) */
+  .betting-area { display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; }
+  .chip-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+  .chip-btn { position:relative; width: 42px; height: 42px; border-radius:50%; border:2px dashed rgba(255,255,255,.4); background: radial-gradient(circle at 35% 35%, #ffd166, #f59e0b); color:#1f2937; font-weight:800; cursor:pointer; box-shadow: 0 6px 16px rgba(0,0,0,.25); }
+  .chip-btn[data-chip="5"]{ background: radial-gradient(circle at 35% 35%, #fde68a, #f59e0b); }
+  .chip-btn[data-chip="10"]{ background: radial-gradient(circle at 35% 35%, #93c5fd, #3b82f6); }
+  .chip-btn[data-chip="25"]{ background: radial-gradient(circle at 35% 35%, #86efac, #10b981); }
+  .chip-btn[data-chip="100"]{ background: radial-gradient(circle at 35% 35%, #fca5a5, #ef4444); color:#0b0f16 }
+  .chip-btn.active { outline:3px solid var(--accent-2); }
+  .betting-mat { display:grid; grid-template-columns: 80px repeat(12, minmax(60px, 1fr)); gap:4px; background: linear-gradient(180deg, rgba(16,24,35,.9), rgba(8,12,20,.9)); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; width:100%; flex:1; overflow:auto; }
+  .cell { position:relative; min-height:52px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.1); border-radius:8px; color:#e5e7eb; font-weight:800; cursor:pointer; user-select:none; background: rgba(255,255,255,.02); font-size:14px; }
+  .cell.zero { grid-row: 1 / span 3; background: rgba(16,185,129,.35); border-color: rgba(16,185,129,.55); }
+  .cell.red { background: rgba(239,68,68,.28); }
+  .cell.black { background: rgba(17,24,39,.7); }
+  .cell:hover { filter: brightness(1.15); }
+  .outside { background: rgba(255,255,255,.05); font-weight:700; }
+  .stack { position:absolute; bottom:4px; right:6px; background: rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:2px 6px; font-size:12px }
+  .chip { position:absolute; top:50%; left:50%; transform: translate(-50%,-50%); width:32px; height:32px; border-radius:50%; border:2px dashed rgba(255,255,255,.6); background: radial-gradient(circle at 35% 35%, #ffd166, #f59e0b); color:#1f2937; font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center; pointer-events:none; box-shadow: 0 8px 16px rgba(0,0,0,.35) }
+  .chip.small { width:26px; height:26px; font-size:11px }
+  .mat-caption { color: var(--muted); font-size:12px }
     </style>
   </head>
   <body>
@@ -92,6 +119,27 @@
         </div>
         <div class="msg" id="rl-msg"></div>
         <div class="muted">Einfaches Demo-Roulette. Kein echtes Geld.</div>
+        
+        <div class="roulette-layout">
+          <div class="betting-area">
+            <div class="chip-toolbar">
+              <span class="muted">Chip:</span>
+              <button class="chip-btn active" data-chip="1">1</button>
+              <button class="chip-btn" data-chip="5">5</button>
+              <button class="chip-btn" data-chip="10">10</button>
+              <button class="chip-btn" data-chip="25">25</button>
+              <button class="chip-btn" data-chip="100">100</button>
+              <button class="btn ghost" id="clear-bets">Einsätze löschen</button>
+            </div>
+            <div class="betting-mat" id="betting-mat" aria-label="Setzfeld"></div>
+            <div class="mat-caption">Tipp: Klicke auf ein Feld, um Chips zu platzieren. Oder nutze die Auswahl oben.</div>
+          </div>
+          <div class="wheel-side">
+            <div class="wheel-wrapper" style="display:flex;justify-content:center;">
+              <div class="wheel" id="wheel-vis" aria-label="Roulette-Rad" style="width:340px;height:340px;position:relative;border-radius:50%;background:radial-gradient(circle,#d4c097,#b8913f 70%);box-shadow:0 10px 26px rgba(0,0,0,.5),inset 0 0 18px rgba(0,0,0,.4);"></div>
+            </div>
+          </div>
+        </div>
       </section>
       <canvas id="fx-canvas"></canvas>
     </main>
@@ -125,24 +173,183 @@
       // Roulette logic
       const betIn=$('#rl-bet'), typeSel=$('#rl-type'), numberWrap=$('#rl-number-wrap'), numberIn=$('#rl-number');
       const spinBtn=$('#rl-spin'), outEl=$('#rl-result'), colorEl=$('#rl-color'), msg=$('#rl-msg'), wheel=$('#rl-wheel');
+      
+  // (Wheel removed)
+      
+      // --- Betting mat ---
+      // --- Betting mat logic (restored) ---
       typeSel.addEventListener('change', ()=>{ numberWrap.hidden = typeSel.value!=='number'; });
-      function color(n){ if(n===0) return 'grün'; const reds=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]; return reds.includes(n)?'rot':'schwarz'; }
+      const bettingMat=$('#betting-mat');
+      const chipToolbarBtns=$$('.chip-btn');
+      const clearBetsBtn=$('#clear-bets');
+      let currentChip=1;
+      chipToolbarBtns.forEach(b=>{
+        b.addEventListener('click',()=>{
+          chipToolbarBtns.forEach(x=>x.classList.remove('active'));
+            b.classList.add('active');
+            currentChip=Number(b.dataset.chip||'1');
+            betIn.value=String(currentChip);
+            Sound.play('click');
+        });
+      });
+      function matCell(label, cls='', attrs={}){ const d=document.createElement('div'); d.className=`cell ${cls}`.trim(); d.textContent=label; Object.entries(attrs).forEach(([k,v])=>d.setAttribute(k,v)); return d; }
+  function isRed(n){ return n!==0 && (n % 2 === 1); }
+      function createMat(){
+        if(!bettingMat) return;
+        // Column 0: zero spanning 3 rows
+        const zero=matCell('0','zero outside',{'data-bet':'number','data-key':'0'}); bettingMat.appendChild(zero);
+        // Left-to-right ascending rows instead of bottom-to-top column grouping
+        const grid=[
+          Array.from({length:12},(_,i)=>1+i),        // 1..12
+          Array.from({length:12},(_,i)=>13+i),       // 13..24
+          Array.from({length:12},(_,i)=>25+i)        // 25..36
+        ];
+        for(let r=0; r<3; r++){
+          for(let c=0; c<12; c++){
+            const n=grid[r][c];
+            const cls = (n===0)?'zero':(isRed(n)?'red':'black');
+            const cell = matCell(String(n), cls, { 'data-bet':'number', 'data-key':String(n) });
+            bettingMat.appendChild(cell);
+          }
+        }
+        const outs=[
+          {label:'1st 12', bet:'dozen', key:'1', span:4},
+          {label:'2nd 12', bet:'dozen', key:'2', span:4},
+          {label:'3rd 12', bet:'dozen', key:'3', span:4},
+          {label:'1-18', bet:'low', key:'low', span:2},
+          {label:'EVEN', bet:'even', key:'even', span:2},
+          {label:'ROT', bet:'color', key:'red', span:2},
+          {label:'SCHWARZ', bet:'color', key:'black', span:2},
+          {label:'ODD', bet:'odd', key:'odd', span:2},
+          {label:'19-36', bet:'high', key:'high', span:2},
+        ];
+        outs.forEach(o=>{
+          const d=matCell(o.label,'outside',{'data-bet':o.bet,'data-key':o.key, style:`grid-column: span ${o.span}`}); bettingMat.appendChild(d);
+        });
+      }
+      createMat();
+      const betMap=new Map(); // key -> {type,key,amount,el}
+      function betKey(type,key){ return `${type}:${key}`; }
+      function pop(el){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),350); }
+      function placeChipOn(cell, type, key, amt){
+        const k=betKey(type,key);
+        const existing=betMap.get(k);
+        if(existing){ existing.amount += amt; const s=existing.el.querySelector('.stack'); if(s) s.textContent = fmt(existing.amount); pop(existing.el); return; }
+        const wrap=document.createElement('div'); wrap.className='chip-wrap'; wrap.style.position='absolute'; wrap.style.inset='0';
+        const chip=document.createElement('div'); chip.className='chip'; chip.textContent=amt; wrap.appendChild(chip);
+        const stack=document.createElement('div'); stack.className='stack'; stack.textContent=fmt(amt); wrap.appendChild(stack);
+        cell.appendChild(wrap);
+        betMap.set(k,{type,key,amount:amt,el:wrap});
+        pop(chip);
+      }
+      function clearBets(){ betMap.forEach(b=>b.el.remove()); betMap.clear(); }
+      if(clearBetsBtn) clearBetsBtn.addEventListener('click',()=>{ clearBets(); Sound.play('click'); });
+      if(bettingMat) bettingMat.addEventListener('click', (e)=>{
+        const cell=e.target.closest('.cell'); if(!cell) return;
+        const type=cell.getAttribute('data-bet'); const key=cell.getAttribute('data-key'); if(!type||!key) return;
+        const amt=currentChip;
+        if(amt<1) return; if(amt>bankroll){ msg.textContent='Zu wenig Guthaben für diesen Einsatz.'; return; }
+        placeChipOn(cell, type, key, amt);
+      });
+      function totalPlacedBet(){ let t=0; betMap.forEach(b=> t+=b.amount); return t; }
+      function resolvePayout(n){
+        const c=color(n); let win=0;
+        betMap.forEach(b=>{
+          const amt=b.amount; const t=b.type; const k=b.key;
+          if(t==='number'){ const target=Number(k); if(target===n) win += amt*36; }
+          else if(t==='color'){ if(n!==0 && ((k==='red'&&c==='rot')||(k==='black'&&c==='schwarz'))) win += amt*2; }
+          else if(t==='even'){ if(n!==0 && (n%2===0)) win += amt*2; }
+          else if(t==='odd'){ if(n!==0 && (n%2===1)) win += amt*2; }
+          else if(t==='low'){ if(n>=1 && n<=18) win += amt*2; }
+          else if(t==='high'){ if(n>=19 && n<=36) win += amt*2; }
+          else if(t==='dozen'){ const d=Number(k); if(d===1 && n>=1&&n<=12) win+=amt*3; else if(d===2 && n>=13&&n<=24) win+=amt*3; else if(d===3 && n>=25&&n<=36) win+=amt*3; }
+        });
+        return win;
+      }
+  function color(n){ if(n===0) return 'grün'; return (n % 2 === 1) ? 'rot' : 'schwarz'; }
       function spin(){ return Math.floor(Math.random()*37); }
-      spinBtn.addEventListener('click', ()=>{
-        const bet = Math.max(1, Math.floor(Number(betIn.value)||0)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
-        const type = typeSel.value; const pick = Math.floor(Number(numberIn.value)||0);
-        credit(-bet);
-        wheel.classList.remove('hide'); outEl.textContent='–'; colorEl.textContent='–'; msg.textContent='Dreht…'; spinBtn.disabled=true; betIn.disabled=true; typeSel.disabled=true; numberIn.disabled=true;
-        setTimeout(()=>{
-          const n = spin(); const c = color(n);
-          wheel.classList.add('hide');
-          outEl.textContent=String(n); outEl.classList.add('pop'); setTimeout(()=>outEl.classList.remove('pop'), 400);
-          colorEl.textContent=c; let win=0;
-          if(type==='red' && c==='rot') win=bet*2; else if(type==='black' && c==='schwarz') win=bet*2; else if(type==='odd' && n!==0 && (n%2===1)) win=bet*2; else if(type==='even' && n!==0 && (n%2===0)) win=bet*2; else if(type==='number' && pick===n) win=bet*36;
-          if(win>0){ credit(win); msg.textContent='Gewinn '+fmt(win-bet)+' (Auszahlung '+fmt(win)+')'; if(type==='number') { FX.burst(1.3); } Sound.play('win'); }
-          else { msg.textContent='Verlust.'; Sound.play('lose'); }
-          spinBtn.disabled=false; betIn.disabled=false; typeSel.disabled=false; numberIn.disabled=false;
-        }, 1500);
+      // Build animated wheel (0 green, odd red, even black)
+  // Sequential order 0..36 for equal sectors
+  const WHEEL_ORDER=Array.from({length:37},(_,i)=>i);
+      const wheelVis=$('#wheel-vis');
+      function buildWheel(){
+        if(!wheelVis) return;
+        const seg=360/37; wheelVis.innerHTML='';
+        // Solid base color dial
+  const dial=document.createElement('div'); dial.className='dial'; dial.style.cssText='position:absolute;inset:0;border-radius:50%;background:#1d2a36;box-shadow:inset 0 0 18px rgba(0,0,0,.7),0 0 6px rgba(0,0,0,.4);overflow:hidden;';
+  // Refined spokes: thinner, softer, with subtle blur ring
+  const spokes=document.createElement('div'); spokes.style.cssText='position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(rgba(255,255,255,.55) 0deg, rgba(255,255,255,.55) 0.7deg, transparent 0.7deg, transparent 9.73deg);mix-blend-mode:screen;pointer-events:none;'; dial.appendChild(spokes);
+  const blurRing=document.createElement('div'); blurRing.style.cssText='position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle, rgba(255,255,255,.12) 0 40%, transparent 45% 100%);pointer-events:none;'; dial.appendChild(blurRing);
+  const innerGlow=document.createElement('div'); innerGlow.style.cssText='position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.10), transparent 65%);pointer-events:none;'; dial.appendChild(innerGlow);
+  // Center hub to hide aliasing convergence
+  const hub=document.createElement('div'); hub.style.cssText='position:absolute;top:50%;left:50%;width:66px;height:66px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#223445 0%, #182632 70%);box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 0 6px rgba(0,0,0,.6);pointer-events:none;'; dial.appendChild(hub);
+        wheelVis.appendChild(dial);
+        // Number ring (0..36)
+        const nums=document.createElement('div'); nums.className='nums'; nums.style.cssText='position:absolute;inset:0;border-radius:50%;pointer-events:none;font-size:13px;font-weight:700;color:#e5e7eb;text-shadow:0 1px 2px rgba(0,0,0,.65);';
+        const radius=140;
+        for(let i=0;i<WHEEL_ORDER.length;i++){
+          const n=WHEEL_ORDER[i];
+          const a=-90 + (i+0.5)*seg; // center of sector
+          const el=document.createElement('div');
+          el.textContent=String(n);
+          el.style.cssText=`position:absolute;top:50%;left:50%;transform:rotate(${a}deg) translateY(-${radius}px) rotate(${-a}deg) translate(-50%,-50%);width:26px;height:22px;display:flex;align-items:center;justify-content:center;`;
+          nums.appendChild(el);
+        }
+        dial.appendChild(nums);
+        const pointer=document.createElement('div'); pointer.style.cssText='position:absolute;bottom:-10px;left:50%;transform:translateX(-50%) rotate(180deg);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:18px solid #ffd166;filter:drop-shadow(0 -2px 3px rgba(0,0,0,.5));z-index:20;'; wheelVis.appendChild(pointer);
+      }
+      buildWheel();
+      let wheelRot=0;
+      function spinWheelTo(n){
+        const seg=360/37; const idx=WHEEL_ORDER.indexOf(n); const pocketAngle= -(idx+0.5)*seg; const minTurns=6; let target=pocketAngle;
+        while((target-wheelRot) > (-minTurns*360)) target-=360;
+        if((target-wheelRot) >=0) target -= 360*(minTurns+1);
+        wheelRot=target;
+        const dial=wheelVis.querySelector('.dial'); const nums=dial?dial.querySelector('.nums'):null; const dur=1400;
+        if(dial){
+          dial.style.willChange='transform';
+          dial.style.transition=`transform ${dur}ms cubic-bezier(.15,.7,.1,1)`;
+          requestAnimationFrame(()=>{ dial.style.transform=`rotate(${wheelRot}deg)`; });
+        }
+        return new Promise(res=> setTimeout(()=>{
+          // highlight landed number
+          if(nums){
+            nums.querySelectorAll('div').forEach(d=>d.style.background='');
+            const landed=nums.querySelectorAll('div')[idx];
+            if(landed){ landed.style.background='rgba(255,255,255,.12)'; landed.style.borderRadius='4px'; setTimeout(()=>{ landed.style.background=''; },1200); }
+          }
+          res();
+        },dur+60));
+      }
+
+      spinBtn.addEventListener('click', async ()=>{
+  const placedTotal= totalPlacedBet();
+  const usingMat = placedTotal>0;
+  const upfrontBet = usingMat ? placedTotal : Math.max(1, Math.floor(Number(betIn.value)||0));
+  if(upfrontBet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
+  credit(-upfrontBet);
+        // UI disable
+        wheel.classList.add('hide'); outEl.textContent='–'; colorEl.textContent='–'; msg.textContent='Dreht…';
+        spinBtn.disabled=true; betIn.disabled=true; typeSel.disabled=true; numberIn.disabled=true;
+
+        // Decide result, animate wheel
+        const n = spin(); const c = color(n);
+        await spinWheelTo(n);
+        
+        // Resolve
+        outEl.textContent=String(n); outEl.classList.add('pop'); setTimeout(()=>outEl.classList.remove('pop'), 400);
+        colorEl.textContent=c; 
+        let win=0;
+        if(usingMat){
+          win = resolvePayout(n);
+        } else {
+          const type = typeSel.value; const pick = Math.floor(Number(numberIn.value)||0);
+          if(type==='red' && c==='rot') win=upfrontBet*2; else if(type==='black' && c==='schwarz') win=upfrontBet*2; else if(type==='odd' && n!==0 && (n%2===1)) win=upfrontBet*2; else if(type==='even' && n!==0 && (n%2===0)) win=upfrontBet*2; else if(type==='number' && pick===n) win=upfrontBet*36;
+        }
+        if(win>0){ credit(win); msg.textContent='Gewinn '+fmt(win-upfrontBet)+' (Auszahlung '+fmt(win)+')'; if(!usingMat || win>=36){ FX.burst(1.2); } Sound.play('win'); }
+        else { msg.textContent='Verlust.'; Sound.play('lose'); }
+        if(usingMat){ clearBets(); }
+        spinBtn.disabled=false; betIn.disabled=false; typeSel.disabled=false; numberIn.disabled=false; if(clearBetsBtn) clearBetsBtn.disabled=false; if(bettingMat) bettingMat.style.pointerEvents='';
       });
     </script>
   </body>
