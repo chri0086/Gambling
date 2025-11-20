@@ -33,6 +33,25 @@
       .muted { color: var(--muted); }
       .msg { min-height:20px; font-weight:700 }
       .badge { padding:2px 8px; border-radius:999px; background: rgba(255,255,255,0.08); font-size:12px }
+  /* Stake-like dice additions */
+  .quick-bets{ display:flex; gap:6px; flex-wrap:wrap }
+  .quick-bets .btn{ padding:6px 10px; font-size:13px }
+  .mode-toggle{ display:flex; gap:6px; }
+  .mode-toggle .btn{ flex:1; padding:8px 10px }
+  .mode-toggle .btn.active{ background: linear-gradient(180deg,#22d3ee,#0ea5e9); color:#03131c; box-shadow: 0 0 0 1px rgba(255,255,255,.15),0 6px 16px rgba(14,165,233,.35) }
+  .range-wrap{ width:100%; display:grid; gap:8px }
+  .range-wrap input[type=range]{ width:100%; appearance:none; height:10px; border-radius:8px; background: linear-gradient(90deg,#22d3ee,#0ea5e9,#10b981); outline:none; box-shadow: inset 0 0 6px rgba(0,0,0,.6); }
+  .range-wrap input[type=range]::-webkit-slider-thumb{ appearance:none; width:22px; height:22px; border-radius:50%; background:#ffd166; border:2px solid #1f2937; box-shadow:0 4px 10px rgba(0,0,0,.45); cursor:pointer }
+  .range-info{ display:flex; justify-content:space-between; font-size:12px; color: var(--muted) }
+  .threshold-bar{ position:relative; height:42px; border-radius:10px; background: linear-gradient(90deg, rgba(14,165,233,.35), rgba(14,165,233,.15)); overflow:hidden; border:1px solid rgba(255,255,255,.08); }
+  .threshold-bar .target{ position:absolute; top:0; bottom:0; width:2px; background:#ffd166; box-shadow:0 0 6px #ffd166; }
+  .threshold-bar .result-marker{ position:absolute; top:4px; width:30px; height:34px; transform:translateX(-50%); display:grid; place-items:center; font-size:11px; font-weight:700; border-radius:8px; background:#1e293b; color:#e6edf3; box-shadow:0 0 0 1px rgba(255,255,255,.15),0 4px 10px rgba(0,0,0,.4); opacity:0; transition: opacity .3s, left .4s ease-out; }
+  .threshold-bar.win{ background: linear-gradient(90deg, rgba(16,185,129,.45), rgba(16,185,129,.22)); }
+  .threshold-bar.lose{ background: linear-gradient(90deg, rgba(239,68,68,.45), rgba(239,68,68,.22)); }
+  .roll-history{ display:flex; flex-wrap:wrap; gap:6px; min-height:34px }
+  .hist{ padding:4px 8px; border-radius:8px; font-size:12px; font-weight:700; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); }
+  .hist.win{ background:rgba(16,185,129,.25); border-color:rgba(16,185,129,.45); color:#10b981 }
+  .hist.lose{ background:rgba(239,68,68,.22); border-color:rgba(239,68,68,.45); color:#ef4444 }
       .shake { animation: shake 500ms ease-in-out; }
       @keyframes shake { 0%,100%{ transform:translateX(0) } 20%{ transform:translateX(-4px) } 40%{ transform:translateX(4px) } 60%{ transform:translateX(-3px) } 80%{ transform:translateX(3px) } }
 
@@ -42,7 +61,7 @@
       @keyframes amtUp { 0%{ color:#fff } 20%{ color:#10b981; transform: scale(1.08) } 100%{ color: var(--gold); transform: scale(1) } }
       @keyframes amtDown { 0%{ color:#fff } 20%{ color:#ef4444; transform: scale(0.96) } 100%{ color: var(--gold); transform: scale(1) } }
 
-      #fx-canvas{ position:absolute; inset:0; pointer-events:none }
+  #fx-canvas{ position:absolute; inset:0; pointer-events:none }
     </style>
   </head>
   <body>
@@ -54,6 +73,7 @@
         <a href="slots.html">Slots</a>
         <a href="dice.html" class="active">Dice</a>
         <a href="crash.html">Crash</a>
+        <a href="plinko.html">Plinko</a>
       </nav>
       <div class="balance">
         <span>Guthaben:</span>
@@ -68,11 +88,31 @@
         <h3>Dice</h3>
         <div class="controls">
           <label>Einsatz ($): <input type="number" id="dc-bet" class="input" value="5" min="1" step="1"/></label>
-          <label>Gewinnchance (%): <input type="number" id="dc-chance" class="input" value="50" min="1" max="95"/></label>
+          <div class="quick-bets">
+            <button class="btn ghost" data-qb="-5">-5</button>
+            <button class="btn ghost" data-qb="+5">+5</button>
+            <button class="btn ghost" data-qb="half">1/2</button>
+            <button class="btn ghost" data-qb="double">2×</button>
+            <button class="btn ghost" data-qb="max">Max</button>
+          </div>
+          <label style="display:none">Gewinnchance (%): <input type="number" id="dc-chance" class="input" value="50" min="1" max="95"/></label>
           <button class="btn gold" id="dc-roll">Roll</button>
         </div>
-        <div>Wurf: <span class="badge" id="dc-roll-out">–</span> • Erwartete Auszahlung: <span class="badge" id="dc-quote">–</span></div>
-        <div class="msg" id="dc-msg"></div>
+        <div class="stake-ui">
+          <div class="mode-toggle">
+            <button class="btn ghost active" id="dc-under">Under</button>
+            <button class="btn ghost" id="dc-over">Over</button>
+          </div>
+          <div class="range-wrap">
+            <input type="range" id="dc-ch-slider" min="1" max="95" value="50" />
+            <div class="range-info"><span id="dc-chance-label">Chance 50%</span><span id="dc-payout-label">Payout –</span></div>
+          </div>
+          <div class="threshold-bar" id="dc-bar" aria-label="Gewinnschwelle"><div class="target" id="dc-target"></div><div class="result-marker" id="dc-marker">–</div></div>
+          <div>Letzter Wurf: <span class="badge" id="dc-roll-out">–</span> • Erwartete Auszahlung: <span class="badge" id="dc-quote">–</span></div>
+          <div class="roll-history" id="dc-history" aria-label="Verlauf letzter Würfe"></div>
+          <div class="msg" id="dc-msg"></div>
+        </div>
+        <!-- 3D Dice removed -->
         <div class="muted">Quote ~ (0.99 / Chance) • House-Edge ~1%</div>
       </section>
       <canvas id="fx-canvas"></canvas>
@@ -101,19 +141,39 @@
       const FX=(()=>{ const ctx=fxCanvas.getContext('2d'); let ps=[]; let running=false; let raf=0; function resize(){ const r=fxCanvas.getBoundingClientRect(); fxCanvas.width=Math.floor(r.width*devicePixelRatio); fxCanvas.height=Math.floor(r.height*devicePixelRatio);} window.addEventListener('resize',resize); resize(); function randColor(){ const cs=['#22d3ee','#0ea5e9','#10b981','#f59e0b','#ef4444','#eab308','#a78bfa','#f472b6']; return cs[Math.floor(Math.random()*cs.length)]; } function spawn(n=120){ const w=fxCanvas.width,h=fxCanvas.height; for(let i=0;i<n;i++){ ps.push({ x:w/2+(Math.random()*w/3-w/6), y:-20*devicePixelRatio, vx:(Math.random()-0.5)*3*devicePixelRatio, vy:(2+Math.random()*2)*devicePixelRatio, g:0.08*devicePixelRatio, s:(2+Math.random()*3)*devicePixelRatio, c:randColor(), a:1, rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.2 }); } } function step(){ if(!running) return; const w=fxCanvas.width,h=fxCanvas.height; ctx.clearRect(0,0,w,h); ps.forEach(p=>{ p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.a=Math.max(0,p.a-0.005); ctx.save(); ctx.globalAlpha=p.a; ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c; ctx.fillRect(-p.s,-p.s/2,p.s*2,p.s); ctx.restore(); }); ps=ps.filter(p=>p.y<h+40&&p.a>0.01); if(ps.length===0){ running=false; cancelAnimationFrame(raf); return; } raf=requestAnimationFrame(step);} function burst(intensity=1){ resize(); spawn(Math.floor(120*intensity)); if(!running){ running=true; step(); } } return { burst }; })();
 
       // Dice logic
-      const betIn=$('#dc-bet'); const chanceIn=$('#dc-chance'); const rollBtn=$('#dc-roll'); const outEl=$('#dc-roll-out'); const quoteEl=$('#dc-quote'); const msg=$('#dc-msg');
+  const betIn=$('#dc-bet'); const chanceIn=$('#dc-chance'); const rollBtn=$('#dc-roll'); const outEl=$('#dc-roll-out'); const quoteEl=$('#dc-quote'); const msg=$('#dc-msg');
+  // 3D dice removed
+  // Stake-like additions
+  const chSlider=$('#dc-ch-slider'); const chLabel=$('#dc-chance-label'); const payoutLabel=$('#dc-payout-label');
+  const underBtn=$('#dc-under'); const overBtn=$('#dc-over'); const barEl=$('#dc-bar'); const targetEl=$('#dc-target'); const markerEl=$('#dc-marker'); const historyEl=$('#dc-history');
+  const quickBetBtns=$$('.quick-bets .btn');
+  let mode='under';
+  function syncChance(val){ const ch=Math.min(95, Math.max(1, Number(val)||50)); chSlider.value=String(ch); chLabel.textContent='Chance '+ch+'%'; if(chanceIn) chanceIn.value=String(ch); const mult = 0.99/(ch/100); quoteEl.textContent = mult.toFixed(2)+'x'; payoutLabel.textContent='Payout '+mult.toFixed(2)+'x'; updateThreshold(ch); }
+  function updateThreshold(ch){ const pos = mode==='under'? ch : (100 - ch); targetEl.style.left = pos+'%'; }
+  function pushHistory(val, win){ const el=document.createElement('span'); el.className='hist '+(win?'win':'lose'); el.textContent=val.toFixed(2)+'%'; historyEl.prepend(el); while(historyEl.children.length>14){ historyEl.lastElementChild.remove(); } }
       function updateQuote(){ const ch=Math.min(95, Math.max(1, Number(chanceIn.value)||50)); const q = 0.99 / (ch/100); quoteEl.textContent = q.toFixed(2)+'x'; }
       chanceIn.addEventListener('input', updateQuote); updateQuote();
+  // Removed 3D dice functions (setDieFace, orientation, idle spin)
       rollBtn.addEventListener('click', ()=>{
         const bet=Math.max(1, Math.floor(Number(betIn.value)||0)); const ch=Math.min(95, Math.max(1, Number(chanceIn.value)||50)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
         credit(-bet); Sound.play('click');
         rollBtn.disabled=true; betIn.disabled=true; chanceIn.disabled=true; msg.textContent='Würfelt…'; outEl.classList.add('shake');
-        let t=0; const it = setInterval(()=>{ const tmp = (Math.random()*100).toFixed(2)+'%'; outEl.textContent=tmp; if((t+=80)>=800){ clearInterval(it); outEl.classList.remove('shake');
-            const r = Math.random()*100; outEl.textContent=r.toFixed(2)+'%'; const win = r < ch; const mult = 0.99/(ch/100);
-            if(win){ const payout = Math.floor(bet*mult); credit(payout); msg.textContent='Gewinn '+fmt(payout-bet)+' ('+mult.toFixed(2)+'x)'; Sound.play('win'); if(mult>=4) FX.burst(0.9); } else { msg.textContent='Verlust.'; Sound.play('lose'); }
+  barEl.classList.remove('win','lose'); markerEl.style.opacity='0'; markerEl.style.left='0%';
+        let t=0; const it=setInterval(()=>{ const tmp=(Math.random()*100).toFixed(2)+'%'; outEl.textContent=tmp; if((t+=80)>=800){ clearInterval(it); outEl.classList.remove('shake');
+            const r=Math.random()*100; outEl.textContent=r.toFixed(2)+'%'; const win = mode==='under' ? (r < ch) : (r > (100 - ch)); const mult=0.99/(ch/100);
+            if(win){ const payout=Math.floor(bet*mult); credit(payout); msg.textContent='Gewinn '+fmt(payout-bet)+' ('+mult.toFixed(2)+'x)'; Sound.play('win'); if(mult>=4) FX.burst(0.9); barEl.classList.add('win'); } else { msg.textContent='Verlust.'; Sound.play('lose'); barEl.classList.add('lose'); }
             rollBtn.disabled=false; betIn.disabled=false; chanceIn.disabled=false;
-        } }, 80);
+            // 3D dice removed: skip cube animation
+            const markerPos=(r/100)*100; markerEl.textContent=r.toFixed(2)+'%'; markerEl.style.left=markerPos+'%'; markerEl.style.opacity='1'; pushHistory(r, win);
+        } },80);
+  // Removed scramble rotation
       });
+      // Mode buttons & slider
+      underBtn.addEventListener('click',()=>{ mode='under'; underBtn.classList.add('active'); overBtn.classList.remove('active'); syncChance(chSlider.value); });
+      overBtn.addEventListener('click',()=>{ mode='over'; overBtn.classList.add('active'); underBtn.classList.remove('active'); syncChance(chSlider.value); });
+      chSlider.addEventListener('input',()=> syncChance(chSlider.value));
+      quickBetBtns.forEach(b=> b.addEventListener('click',()=>{ const k=b.getAttribute('data-qb'); let v=Math.max(1, Math.floor(Number(betIn.value)||0)); if(k==='-5') v-=5; else if(k==='+5') v+=5; else if(k==='half') v=Math.max(1, Math.floor(v/2)); else if(k==='double') v*=2; else if(k==='max') v=bankroll; v=Math.max(1, Math.min(v, bankroll)); betIn.value=String(v); Sound.play('click'); }));
+      syncChance(chSlider.value);
     </script>
   </body>
 </html>
