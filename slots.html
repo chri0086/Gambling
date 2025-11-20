@@ -254,7 +254,7 @@
           betInput:     $('#betInput'),
           linesDisplay: $('#linesDisplay'),
           totalBet:     $('#totalBet'),
-          balance:      $('#balance'),
+          balance:      (document.querySelector('#balance')||document.querySelector('#bankroll')),
           lastWin:      $('#lastWin'),
           paytableBtn:  $('#paytableBtn'),
           reels:        $$('.reel[data-reel]'),
@@ -262,6 +262,27 @@
           bigwin:       $('#bigwin'),
           fxCanvas:     document.getElementById('fx-canvas')
         };
+
+        // Shared Bank module (localStorage + BroadcastChannel sync)
+        const BANK_KEY='casino_bankroll_v1'; const START_BANK=1000; const BUS=('BroadcastChannel' in window)? new BroadcastChannel('casino_bankroll_bus'): null;
+        function bankLoad(){
+          try{
+            const cur = localStorage.getItem(BANK_KEY);
+            if(cur!==null){ const n=Number(cur); if(Number.isFinite(n)&&n>=0) return Math.floor(n); }
+            // Migration: adopt legacy keys if present
+            const legacyKeys = ['bankroll','balance','casino_balance','casino_bankroll','wallet','money'];
+            for(const k of legacyKeys){ const v = localStorage.getItem(k); if(v!=null){ const n=Number(v); if(Number.isFinite(n)&&n>=0){ localStorage.setItem(BANK_KEY, String(Math.floor(n))); return Math.floor(n); } } }
+          }catch{}
+          return START_BANK;
+        }
+        function bankSave(v){ try{ localStorage.setItem(BANK_KEY, String(v)); }catch{} }
+        function bankSet(v){ v=Math.max(0, Math.floor(v)); bankSave(v); BUS&&BUS.postMessage({t:'bank', v}); updateBalanceDisplay(v, true); }
+        function bankGet(){ return bankLoad(); }
+        function bankCredit(delta){ const v=bankGet()+delta; bankSet(v); flashBalance(delta); }
+        function flashBalance(delta){ if(!els.balance) return; els.balance.classList.remove('flash-up','flash-down'); void els.balance.offsetWidth; els.balance.classList.add(delta>=0?'flash-up':'flash-down'); }
+  function updateBalanceDisplay(v, noFlash){ if(!els.balance) return; const val=(v??bankGet()); const s=val.toLocaleString('de-DE'); els.balance.textContent = s; if(!noFlash){ /* keep flash on credit only */ } }
+        window.addEventListener('storage', (e)=>{ if(e.key===BANK_KEY){ const n=Number(e.newValue||''); if(Number.isFinite(n)){ updateBalanceDisplay(Math.max(0, Math.floor(n)), true); } } });
+        BUS&&BUS.addEventListener('message', (ev)=>{ const d=ev.data; if(d&&d.t==='bank'){ const n=Number(d.v); if(Number.isFinite(n)) updateBalanceDisplay(Math.max(0, Math.floor(n)), true); } });
 
         function validateReelsStructure() {
           if (!els.reels || els.reels.length !== 5) return false;
@@ -273,7 +294,6 @@
         }
 
         let state = {
-          balance: 1000,
           betPerLine: 1,
           lines: LINES,
           auto: false,
@@ -520,7 +540,7 @@
           els.linesDisplay.textContent = String(LINES);
           els.totalBet.textContent = (per * LINES).toLocaleString('de-DE');
         }
-        function updateBalanceDisplay() { els.balance.textContent = state.balance.toLocaleString('de-DE'); }
+  function updateBalanceDisplayWrapper(){ updateBalanceDisplay(bankGet(), true); }
         function updateLastWinDisplay(amount) { els.lastWin.textContent = amount.toLocaleString('de-DE'); }
         function setControlsDisabled(disabled) {
           els.spinBtn.disabled = disabled;
@@ -531,7 +551,7 @@
           const per = clampBet(Number(els.betInput.value));
           const total = per * LINES;
           if (state.freeSpins > 0) return true;
-          return state.balance >= total;
+          return bankGet() >= total;
         }
 
         async function spinHandler({ viaAuto=false } = {}) {
@@ -540,14 +560,14 @@
           state.betPerLine = clampBet(Number(els.betInput.value));
           const totalBet = state.betPerLine * LINES;
           if (state.freeSpins <= 0) {
-            if (state.balance < totalBet) {
+            if (bankGet() < totalBet) {
               updateTotals(); updateBalanceDisplay(); setControlsDisabled(false);
               state.auto = false; els.autoBtn?.setAttribute('aria-pressed','false');
               return;
             }
-            state.balance -= totalBet;
+            bankCredit(-totalBet);
           }
-          updateTotals(); updateBalanceDisplay(); updateLastWinDisplay(0);
+          updateTotals(); updateBalanceDisplayWrapper(); updateLastWinDisplay(0);
           state.spinning = true; setControlsDisabled(true);
 
           const stops = randomStops();
@@ -555,7 +575,7 @@
           await spinReels(finalGrid);
 
           const res = evalWin(finalGrid, state.betPerLine);
-          state.balance += res.totalWin;
+          if (res.totalWin>0) bankCredit(res.totalWin);
           if (res.totalWin > 0) {
             highlightWins(res.paylineWins);
             // FX thresholds
@@ -568,7 +588,7 @@
           if (res.freeSpinsAwarded > 0) state.freeSpins += res.freeSpinsAwarded;
           else if (state.freeSpins > 0) state.freeSpins -= 1;
 
-          updateBalanceDisplay(); updateLastWinDisplay(res.totalWin);
+          updateBalanceDisplayWrapper(); updateLastWinDisplay(res.totalWin);
           state.spinning = false; setControlsDisabled(false);
 
           if (viaAuto || state.auto) {
@@ -593,14 +613,12 @@
 
           // Optional: Reset Button des Headers falls vorhanden
           const resetBtn = document.getElementById('reset-bank');
-          if (resetBtn) {
-            resetBtn.addEventListener('click', () => { state.balance = 1000; updateBalanceDisplay(); });
-          }
+          if (resetBtn) { resetBtn.addEventListener('click', () => { bankSet(START_BANK); }); }
         }
 
         function init() {
           if (!validateReelsStructure()) { console.error('Reel-Struktur ungültig'); return; }
-          state.balance = Number(els.balance?.textContent?.replace(/\D/g,'') || '1000');
+          updateBalanceDisplayWrapper();
           state.betPerLine = Number(els.betInput?.value || '1');
           updateTotals(); updateBalanceDisplay(); updateLastWinDisplay(0);
           const initial = buildGridFromReels(randomStops());

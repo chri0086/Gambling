@@ -21,7 +21,7 @@
       .balance { display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:12px; }
       .balance .amount { color: var(--gold); font-weight:800; }
 
-      main { padding: 16px; display:grid; gap:16px; position: relative; max-width: 900px; margin: 0 auto; }
+  main { padding: 16px; display:grid; gap:16px; position: relative; max-width: 1000px; margin: 0 auto; }
       .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; }
       .controls { display:flex; gap: 10px; flex-wrap:wrap; align-items:center }
       .input { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); color: var(--text); padding:8px 10px; border-radius:10px }
@@ -35,7 +35,7 @@
       .msg { min-height:20px; font-weight:700 }
       .badge { padding:2px 8px; border-radius:999px; background: rgba(255,255,255,0.08); font-size:12px }
 
-      .crash { display:flex; align-items:center; gap:12px; }
+  .crash { display:flex; align-items:center; gap:12px; justify-content:space-between; }
       .crash .mult { font-size: 28px; font-weight: 900; letter-spacing: .5px }
       .crash .live { color: var(--accent); }
       .crash .busted { color: var(--danger); }
@@ -48,7 +48,14 @@
       @keyframes amtUp { 0%{ color:#fff } 20%{ color:#10b981; transform: scale(1.08) } 100%{ color: var(--gold); transform: scale(1) } }
       @keyframes amtDown { 0%{ color:#fff } 20%{ color:#ef4444; transform: scale(0.96) } 100%{ color: var(--gold); transform: scale(1) } }
 
-      #fx-canvas{ position:absolute; inset:0; pointer-events:none }
+  .chart-wrap { position: relative; border:1px solid rgba(255,255,255,.06); border-radius:12px; overflow:hidden; background: radial-gradient(600px 400px at 50% -10%, rgba(34,211,238,.06), rgba(14,165,233,.04) 60%, rgba(8,16,24,.45)); }
+  #cr-chart{ width:100%; height:360px; display:block; }
+  .last-results { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px }
+  .pill { padding:4px 8px; border-radius:999px; font-weight:700; font-size:12px; border:1px solid rgba(255,255,255,.12) }
+  .pill.g { background: rgba(16,185,129,.12); color:#34d399; border-color: rgba(16,185,129,.35) }
+  .pill.y { background: rgba(245,158,11,.12); color:#f59e0b; border-color: rgba(245,158,11,.35) }
+  .pill.r { background: rgba(239,68,68,.12); color:#ef4444; border-color: rgba(239,68,68,.35) }
+  #fx-canvas{ position:absolute; inset:0; pointer-events:none; z-index: 3 }
     </style>
   </head>
   <body>
@@ -71,16 +78,27 @@
     </header>
     <main>
       <section class="panel" id="game-crash">
-        <h3>Crash</h3>
+        <h3 style="margin-top:0">Crash</h3>
         <div class="controls">
           <label>Einsatz ($): <input type="number" id="cr-bet" class="input" value="5" min="1" step="1"/></label>
-          <button class="btn gold" id="cr-start">Start</button>
+          <label>Auto Cashout (x): <input type="number" id="cr-auto" class="input" value="0" min="0" step="0.01"/></label>
+          <button class="btn gold" id="cr-start">Start/Join</button>
           <button class="btn ok" id="cr-cash" disabled>Cash Out</button>
+          <button class="btn ghost" id="cr-auto-toggle" aria-pressed="false">Auto</button>
+          <label class="muted" style="display:flex; align-items:center; gap:6px">x2 bei Verlust <input type="checkbox" id="cr-marti"/></label>
+          <label>Stop Win ($): <input type="number" id="cr-stop-win" class="input" value="0" min="0" step="1"/></label>
+          <label>Stop Loss ($): <input type="number" id="cr-stop-loss" class="input" value="0" min="0" step="1"/></label>
+          <span class="badge" id="cr-count">Warte…</span>
         </div>
         <div class="crash">
-          <div class="mult" id="cr-mult">1.00x</div>
-          <div class="muted" id="cr-status">Bereit</div>
+          <div style="display:flex; align-items:center; gap:10px">
+            <div class="mult" id="cr-mult">1.00x</div>
+            <div class="muted" id="cr-status">Bereit</div>
+          </div>
+          <div class="muted">Letzte Runden:</div>
         </div>
+        <div class="last-results" id="cr-last"></div>
+        <div class="chart-wrap"><canvas id="cr-chart"></canvas></div>
         <div class="msg" id="cr-msg"></div>
       </section>
       <canvas id="fx-canvas"></canvas>
@@ -88,10 +106,15 @@
     <script>
       'use strict';
       const $=(s)=>document.querySelector(s); const $$=(s)=>Array.from(document.querySelectorAll(s)); const fmt=(n)=>`$${Number(n).toLocaleString()}`;
-      const BANK_KEY='casino_bankroll_v1'; const START_BANK=1000; let bankroll=loadBank(); const bankrollEl=$('#bankroll');
-      function loadBank(){ try{ const n=Number(localStorage.getItem(BANK_KEY)); if(Number.isFinite(n)&&n>=0) return Math.floor(n);}catch{} return START_BANK; }
-      function saveBank(){ try{ localStorage.setItem(BANK_KEY, String(bankroll)); }catch{} }
-      function credit(delta){ bankroll=Math.max(0, bankroll+delta); bankrollEl.textContent=fmt(bankroll); bankrollEl.classList.remove('flash-up','flash-down'); void bankrollEl.offsetWidth; bankrollEl.classList.add(delta>=0?'flash-up':'flash-down'); saveBank(); }
+  const BANK_KEY='casino_bankroll_v1'; const START_BANK=1000; let bankroll=loadBank(); const bankrollEl=$('#bankroll');
+  const BUS = ('BroadcastChannel' in window) ? new BroadcastChannel('casino_bankroll_bus') : null;
+  function loadBank(){ try{ const n=Number(localStorage.getItem(BANK_KEY)); if(Number.isFinite(n)&&n>=0) return Math.floor(n);}catch{} return START_BANK; }
+  function saveBank(){ try{ localStorage.setItem(BANK_KEY, String(bankroll)); }catch{} }
+  function updateBankEl(){ bankrollEl.textContent=fmt(bankroll); }
+  function broadcastBank(){ try{ BUS && BUS.postMessage({t:'bank', v:bankroll}); }catch{} }
+  function credit(delta){ bankroll=Math.max(0, bankroll+delta); updateBankEl(); bankrollEl.classList.remove('flash-up','flash-down'); void bankrollEl.offsetWidth; bankrollEl.classList.add(delta>=0?'flash-up':'flash-down'); saveBank(); broadcastBank(); }
+  window.addEventListener('storage', (e)=>{ if(e.key===BANK_KEY){ const n=Number(e.newValue||''); if(Number.isFinite(n)){ bankroll = Math.max(0, Math.floor(n)); updateBankEl(); } } });
+  if(BUS){ BUS.addEventListener('message', (ev)=>{ const d=ev.data; if(d && d.t==='bank'){ const n=Number(d.v); if(Number.isFinite(n) && n!==bankroll){ bankroll = Math.max(0, Math.floor(n)); updateBankEl(); } } }); }
       credit(0);
       $('#reset-bank').addEventListener('click', ()=>{ bankroll=START_BANK; credit(0); Sound.play('click'); });
       $('#motion-toggle').addEventListener('click', ()=>{ document.body.classList.toggle('reduce-motion'); });
@@ -100,24 +123,169 @@
       const Sound=(()=>{ let ctx=null; let muted=(function(){ try{ return localStorage.getItem(MUTE_KEY)==='1'; }catch{} return false; })(); function saveMute(){ try{ localStorage.setItem(MUTE_KEY, muted?'1':'0'); }catch{} } function ensure(){ if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; try{ ctx=new AC(); }catch{} } } function envGain(g){ const gain=ctx.createGain(); gain.gain.value=g; gain.connect(ctx.destination); return gain; } function tone(f=440,d=0.12,t='sine',v=0.05){ if(muted||!ctx) return; const o=ctx.createOscillator(); const g=envGain(v); o.type=t; o.frequency.value=f; o.connect(g); const tt=ctx.currentTime; o.start(tt); o.stop(tt+d); } function click(){ tone(660,0.06,'square',0.03) } function win(){ tone(880,0.1,'sine',0.06); setTimeout(()=>tone(1320,0.12,'sine',0.06),90)} function lose(){ tone(220,0.18,'sawtooth',0.05) } function cash(){ tone(740,0.08,'square',0.05); setTimeout(()=>tone(990,0.1,'square',0.05),80); } function update(){ MuteBtn.setAttribute('aria-pressed', muted?'true':'false'); MuteBtn.textContent = muted?'🔇':'🔊'; } update(); return { toggle(){ ensure(); muted=!muted; saveMute(); update(); }, play(n){ ensure(); if(muted) return; if(n==='click') click(); else if(n==='win') win(); else if(n==='lose') lose(); else if(n==='cash') cash(); } }; })();
       MuteBtn.addEventListener('click', ()=>Sound.toggle());
 
-      const fxCanvas=$('#fx-canvas');
-      const FX=(()=>{ const ctx=fxCanvas.getContext('2d'); let ps=[]; let running=false; let raf=0; function resize(){ const r=fxCanvas.getBoundingClientRect(); fxCanvas.width=Math.floor(r.width*devicePixelRatio); fxCanvas.height=Math.floor(r.height*devicePixelRatio);} window.addEventListener('resize',resize); resize(); function randColor(){ const cs=['#22d3ee','#0ea5e9','#10b981','#f59e0b','#ef4444','#eab308','#a78bfa','#f472b6']; return cs[Math.floor(Math.random()*cs.length)]; } function spawn(n=120){ const w=fxCanvas.width,h=fxCanvas.height; for(let i=0;i<n;i++){ ps.push({ x:w/2+(Math.random()*w/3-w/6), y:-20*devicePixelRatio, vx:(Math.random()-0.5)*3*devicePixelRatio, vy:(2+Math.random()*2)*devicePixelRatio, g:0.08*devicePixelRatio, s:(2+Math.random()*3)*devicePixelRatio, c:randColor(), a:1, rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.2 }); } } function step(){ if(!running) return; const w=fxCanvas.width,h=fxCanvas.height; ctx.clearRect(0,0,w,h); ps.forEach(p=>{ p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.a=Math.max(0,p.a-0.005); ctx.save(); ctx.globalAlpha=p.a; ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c; ctx.fillRect(-p.s,-p.s/2,p.s*2,p.s); ctx.restore(); }); ps=ps.filter(p=>p.y<h+40&&p.a>0.01); if(ps.length===0){ running=false; cancelAnimationFrame(raf); return; } raf=requestAnimationFrame(step);} function burst(intensity=1){ resize(); spawn(Math.floor(120*intensity)); if(!running){ running=true; step(); } } return { burst }; })();
+  const fxCanvas=$('#fx-canvas');
+  const FX=(()=>{ const ctx=fxCanvas.getContext('2d'); let ps=[]; let running=false; let raf=0; function resize(){ const r=fxCanvas.getBoundingClientRect(); const dpr=Math.max(1, window.devicePixelRatio||1); fxCanvas.width=Math.floor(r.width*dpr); fxCanvas.height=Math.floor(r.height*dpr);} window.addEventListener('resize',resize); resize(); function randColor(){ const cs=['#22d3ee','#0ea5e9','#10b981','#f59e0b','#ef4444','#eab308','#a78bfa','#f472b6']; return cs[Math.floor(Math.random()*cs.length)]; } function spawn(n=120){ const w=fxCanvas.width,h=fxCanvas.height; const dpr=Math.max(1, window.devicePixelRatio||1); for(let i=0;i<n;i++){ ps.push({ x:w/2+(Math.random()*w/3-w/6), y:h*0.25, vx:(Math.random()-0.5)*3*dpr, vy:(-2-Math.random()*2)*dpr, g:0.08*dpr, s:(2+Math.random()*3)*dpr, c:randColor(), a:1, rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.2 }); } } function step(){ if(!running) return; const w=fxCanvas.width,h=fxCanvas.height; ctx.clearRect(0,0,w,h); ps.forEach(p=>{ p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.a=Math.max(0,p.a-0.006); ctx.save(); ctx.globalAlpha=p.a; ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c; ctx.fillRect(-p.s,-p.s/2,p.s*2,p.s); ctx.restore(); }); ps=ps.filter(p=>p.y<h+40&&p.a>0.02); if(ps.length===0){ running=false; cancelAnimationFrame(raf); return; } raf=requestAnimationFrame(step);} function burst(intensity=1){ resize(); spawn(Math.floor(150*intensity)); if(!running){ running=true; step(); } } return { burst }; })();
 
-      // Crash logic
-      const betIn=$('#cr-bet'); const startBtn=$('#cr-start'); const cashBtn=$('#cr-cash'); const multEl=$('#cr-mult'); const statusEl=$('#cr-status'); const msg=$('#cr-msg');
-      let timer=null; let mult=1.0; let target=0; let active=false; let cashed=false; let bet=0;
-      function randomCrash(){ const r=Math.random(); return Math.max(1.01, Math.pow(1/(1-r), 0.35)); }
-      function reset(){ if(timer){ clearInterval(timer); timer=null; } mult=1.0; target=0; active=false; cashed=false; startBtn.disabled=false; cashBtn.disabled=true; multEl.textContent='1.00x'; statusEl.textContent='Bereit'; statusEl.className='muted'; }
-      reset();
-      startBtn.addEventListener('click', ()=>{
-        bet = Math.max(1, Math.floor(Number(betIn.value)||0)); if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; return; }
-        credit(-bet); Sound.play('click'); target=randomCrash(); active=true; cashed=false; startBtn.disabled=true; cashBtn.disabled=false; msg.textContent=''; statusEl.textContent='LIVE'; statusEl.className='crash live';
-        timer=setInterval(()=>{
-          mult = +(mult*1.02).toFixed(2); multEl.textContent=mult.toFixed(2)+'x';
-          if(mult>=target){ clearInterval(timer); timer=null; active=false; cashBtn.disabled=true; statusEl.textContent='BUST'; statusEl.className='crash busted'; if(!cashed){ msg.textContent='Bust – Verlust.'; Sound.play('lose'); } }
-        }, 120);
+      // Crash logic – Runden, Chart, Auto Cashout
+  const betIn=$('#cr-bet'); const autoIn=$('#cr-auto'); const startBtn=$('#cr-start'); const cashBtn=$('#cr-cash');
+  const autoToggle=$('#cr-auto-toggle'); const martiCb=$('#cr-marti'); const stopWinIn=$('#cr-stop-win'); const stopLossIn=$('#cr-stop-loss');
+      const multEl=$('#cr-mult'); const statusEl=$('#cr-status'); const msg=$('#cr-msg'); const lastEl=$('#cr-last'); const countEl=$('#cr-count');
+      const chartCanvas=$('#cr-chart'); const chartCtx=chartCanvas.getContext('2d');
+
+  let phase='betting'; // 'betting' | 'live' | 'bust'
+      let mult=1.0; let target=0; let cashed=false; let joined=false; let bet=0; let autoX=0;
+      let startTime=0; let rate=0.22; let raf=0; let rounds=[]; // last results
+  let countdownMs=3000; let countdownStart=performance.now();
+  // Auto mode controls
+  let autoMode=false; let autoBaseBet=5; let lastOutcome=null; let lastBetValue=0; let sessionStartBank=bankroll; let sessionProfit=0;
+
+      // Gewinnchancen-Tuning: spätere Busts, höhere Mindest-Multiplikatoren
+      const RTP_TUNE = { minX: 1.20, tailExp: 0.38, biasK: 1.3 };
+      function randomCrash(){
+        // bias r zu größeren Werten (spätere Busts): r = u^(1/k) mit k>1
+        const u = Math.random();
+        const r = Math.pow(u, 1 / RTP_TUNE.biasK);
+        const raw = Math.pow(1/(1 - r), RTP_TUNE.tailExp);
+        return Math.max(RTP_TUNE.minX, raw);
+      }
+
+      function dprResize() {
+        const dpr=Math.max(1, window.devicePixelRatio||1);
+        const rect=chartCanvas.getBoundingClientRect();
+        chartCanvas.width = Math.floor(rect.width*dpr);
+        chartCanvas.height = Math.floor(rect.height*dpr);
+        chartCtx.setTransform(dpr,0,0,dpr,0,0); // work in CSS pixels
+      }
+      window.addEventListener('resize', dprResize);
+      dprResize();
+
+      function drawChart(now){
+        const w=chartCanvas.clientWidth, h=chartCanvas.clientHeight;
+        // bg
+        chartCtx.clearRect(0,0,w,h);
+        // grid
+        chartCtx.strokeStyle='rgba(255,255,255,.08)'; chartCtx.lineWidth=1;
+        chartCtx.beginPath(); for(let x=0;x<=w;x+=Math.round(w/10)) { chartCtx.moveTo(x,0); chartCtx.lineTo(x,h);} for(let y=0;y<=h;y+=Math.round(h/6)){ chartCtx.moveTo(0,y); chartCtx.lineTo(w,y);} chartCtx.stroke();
+        // multiplier curve mapping: x = time, y = multiplier
+        const elapsed = phase==='live' ? (now - startTime)/1000 : (phase==='bust' ? (Math.log(target)/rate) : 0);
+        const xMax = Math.max(6, elapsed+0.5);
+        // y scale so that target (or current) fits nicely
+        const yMax = Math.max(2.5, (phase==='live'?mult:target) + 0.5);
+        function toX(t){ return (t/xMax) * (w-40) + 30; }
+        function toY(m){ const v = Math.min(m, yMax); return h - (v/yMax) * (h-30) - 20; }
+        // curve
+        const grad = chartCtx.createLinearGradient(0,0,w,0); grad.addColorStop(0,'#22d3ee'); grad.addColorStop(1,'#0ea5e9');
+        chartCtx.strokeStyle=grad; chartCtx.lineWidth=3; chartCtx.beginPath();
+        const steps = Math.max(40, Math.floor(xMax*60));
+        for(let i=0;i<=steps;i++){
+          const t = (i/steps)*xMax;
+          const m = Math.exp(rate*Math.min(t, elapsed));
+          const x = toX(t), y = toY(m);
+          if(i===0) chartCtx.moveTo(x,y); else chartCtx.lineTo(x,y);
+        }
+        chartCtx.stroke();
+        // plane marker
+        if(phase!=='betting'){
+          const x = toX(elapsed); const y = toY(mult);
+          chartCtx.save(); chartCtx.translate(x,y); chartCtx.font='18px system-ui,Segoe UI'; chartCtx.fillStyle='#e6edf3'; chartCtx.fillText('✈️', -8, 6); chartCtx.restore();
+        }
+        // axes labels
+        chartCtx.fillStyle='rgba(255,255,255,.7)'; chartCtx.font='12px system-ui,Segoe UI';
+        chartCtx.fillText('Zeit (s)', w-70, h-6);
+        chartCtx.save(); chartCtx.translate(8,16); chartCtx.fillText('Multiplikator', 0,0); chartCtx.restore();
+      }
+
+      function updateLast(){
+        lastEl.innerHTML='';
+        rounds.slice(-12).reverse().forEach(v=>{
+          const pill=document.createElement('span'); pill.className='pill';
+          if(v>=10) pill.classList.add('y'); else if(v>=2) pill.classList.add('g'); else pill.classList.add('r');
+          pill.textContent = v.toFixed(2)+'x'; lastEl.appendChild(pill);
+        });
+      }
+
+      function setPhase(p){ phase=p; if(p==='betting'){ statusEl.textContent='Warte…'; statusEl.className='muted'; mult=1.0; multEl.textContent='1.00x'; } if(p==='live'){ statusEl.textContent='LIVE'; statusEl.className='crash live'; } if(p==='bust'){ statusEl.textContent='BUST'; statusEl.className='crash busted'; }}
+
+      function startRound(){
+        // new target, reset visuals
+        target = randomCrash(); cashed=false; joined=false; bet=0; autoX=0; setPhase('betting');
+        countdownMs = 3000; countdownStart = performance.now(); countEl.textContent = 'Start in 3.0s';
+        startBtn.disabled=false; cashBtn.disabled=true; msg.textContent='';
+        // Auto-join if enabled
+        if(autoMode){
+          // figure next bet
+          let nextBet = autoBaseBet;
+          if(lastOutcome==='loss' && martiCb.checked){ nextBet = Math.max(1, Math.floor(lastBetValue*2)); }
+          if(nextBet>bankroll){ msg.textContent='Auto aus – zu wenig Guthaben.'; autoMode=false; autoToggle.setAttribute('aria-pressed','false'); return; }
+          betIn.value = String(nextBet);
+          // autoX remains from input
+          setTimeout(()=>{ tryJoin(); } , 50);
+        }
+      }
+
+      function beginLive(){
+        setPhase('live'); startTime = performance.now(); rate = 0.22; // growth speed
+        cashBtn.disabled = !joined; // nur Cash wenn eingestiegen
+      }
+
+      function endBust(){
+        setPhase('bust'); rounds.push(target); updateLast();
+        if(joined && !cashed){ msg.textContent='Bust – Verlust.'; Sound.play('lose'); lastOutcome='loss'; lastBetValue=bet; sessionProfit = bankroll - sessionStartBank; checkAutoStops(); }
+        startBtn.disabled=true; cashBtn.disabled=true; // kurze Pause, dann neue Runde
+        setTimeout(startRound, 2200);
+      }
+
+      function loop(now){
+        // chart draw
+        drawChart(now);
+        // state updates
+        if(phase==='betting'){
+          const elapsed = now - countdownStart; const left = Math.max(0, countdownMs - elapsed);
+          countEl.textContent = `Start in ${(left/1000).toFixed(1)}s`;
+          if(left<=0){ beginLive(); }
+        } else if(phase==='live'){
+          const t = (now - startTime)/1000; mult = Math.exp(rate*t); multEl.textContent=mult.toFixed(2)+'x';
+          // auto cashout
+          if(joined && !cashed && autoX>=1.01 && mult>=autoX){
+            doCashout();
+          }
+          if(mult>=target){ endBust(); }
+        } else if(phase==='bust'){
+          countEl.textContent = 'Bust';
+        }
+        raf = requestAnimationFrame(loop);
+      }
+
+      function doCashout(){ if(phase!=='live' || !joined || cashed) return; cashed = true; const payout = Math.floor(bet*mult); credit(payout); msg.textContent='Cash Out '+fmt(payout-bet)+' ('+mult.toFixed(2)+'x)'; Sound.play('cash'); if(mult>=5 || (payout-bet)>=100) FX.burst(1.1); cashBtn.disabled=true; lastOutcome='win'; lastBetValue=bet; sessionProfit = bankroll - sessionStartBank; checkAutoStops(); }
+
+      function tryJoin(){
+        if(phase!=='betting') return false;
+        const v = Math.max(1, Math.floor(Number(betIn.value)||0)); if(v>bankroll){ msg.textContent='Zu wenig Guthaben.'; return false; }
+        bet = v; autoX = Math.max(0, Number(autoIn.value)||0);
+        credit(-bet); Sound.play('click'); joined=true; startBtn.disabled=true; cashBtn.disabled=false; msg.textContent='Einsatz platziert'; countEl.textContent='Warte…';
+        return true;
+      }
+
+      function checkAutoStops(){
+        const stopW = Math.max(0, Math.floor(Number(stopWinIn.value)||0));
+        const stopL = Math.max(0, Math.floor(Number(stopLossIn.value)||0));
+        const p = sessionProfit;
+        if(stopW>0 && p>=stopW){ autoMode=false; autoToggle.setAttribute('aria-pressed','false'); msg.textContent='Auto gestoppt (Stop Win erreicht)'; }
+        if(stopL>0 && -p>=stopL){ autoMode=false; autoToggle.setAttribute('aria-pressed','false'); msg.textContent='Auto gestoppt (Stop Loss erreicht)'; }
+      }
+
+      // UI events
+      startBtn.addEventListener('click', ()=>{ if(tryJoin()){ lastOutcome=null; lastBetValue=bet; } });
+      cashBtn.addEventListener('click', ()=> doCashout());
+      autoToggle.addEventListener('click', ()=>{
+        autoMode = !autoMode; autoToggle.setAttribute('aria-pressed', autoMode?'true':'false');
+        if(autoMode){ autoBaseBet = Math.max(1, Math.floor(Number(betIn.value)||1)); sessionStartBank = bankroll; sessionProfit = 0; lastOutcome=null; lastBetValue=0; msg.textContent='Auto aktiv'; if(phase==='betting'){ tryJoin(); } }
+        else { msg.textContent='Auto aus'; }
       });
-      cashBtn.addEventListener('click', ()=>{ if(!active||cashed) return; cashed=true; const payout=Math.floor(bet*mult); credit(payout); msg.textContent='Cash Out '+fmt(payout-bet)+' ('+mult.toFixed(2)+'x)'; Sound.play('cash'); if(mult>=5 || (payout-bet)>=100) FX.burst(1.1); reset(); });
+
+      // init
+      startRound();
+      raf = requestAnimationFrame(loop);
     </script>
   </body>
 </html>
