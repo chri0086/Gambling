@@ -1,8 +1,37 @@
-<!DOCTYPE html>
-<html lang="de">
+<!DOCTYPE       <nav class="nav">
+        <a href="home.html">🏠 Home</a>
+        <a href="index.html">♠️ Blackjack</a>
+        <a href="roulette.html">🎡 Roulette</a>
+        <a href="slots.html" class="active">🎰 Slots</a>
+        <a href="dice.html">🎲 Dice</a>
+        <a href="crash.html">🚀 Crash</a>
+        <a href="plinko.html">🔻 Plinko</a>
+      </nav>tml lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot"></span> 
+        <span>Casino</span>
+      </div>
+      <nav class="nav">
+        <a href="home.html"> Home</a> href="index.html">♠️ Blackjack</a>
+        <a href="index.html"> Blackjack</a>
+        <a href="roulette.html">🎡 Roulette</a>
+        <a href="slots.html" class="active">🎰 Slots</a>
+        <a href="dice.html">🎲 Dice</a>
+        <a href="crash.html">🚀 Crash</a>
+        <a href="plinko.html">🔻 Plinko</a>
+      </nav>
+      <div class="balance">
+        <span>Guthaben:</span>
+        <span class="amount" id="bankroll">$1,000</span>
+        <button class="btn secondary" id="reset-bank">Reset</button>
+        <button class="btn secondary" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
+        <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">⚡</button>
+      </div>
+    </header>vice-width, initial-scale=1.0" />
     <title>Oriental Tiger — Slots</title>
     <style>
       :root {
@@ -101,7 +130,8 @@
     <header class="topbar">
       <div class="brand"><span class="dot"></span> <span>Oriental Tiger</span></div>
       <nav class="nav">
-        <a href="index.html">Blackjack</a>
+        <a href="home.html"> Home</a> href="index.html">Blackjack</a>
+        <a href="index.html"> Blackjack</a>
         <a href="roulette.html">Roulette</a>
         <a href="slots.html" class="active">Slots</a>
         <a href="dice.html">Dice</a>
@@ -567,6 +597,7 @@
               return;
             }
             bankCredit(-totalBet);
+            if(window.CasinoAddictive){CasinoAddictive.Stats.recordBet(totalBet);}
           }
           updateTotals(); updateBalanceDisplayWrapper(); updateLastWinDisplay(0);
           state.spinning = true; setControlsDisabled(true);
@@ -576,7 +607,8 @@
           await spinReels(finalGrid);
 
           const res = evalWin(finalGrid, state.betPerLine);
-          if (res.totalWin>0) bankCredit(res.totalWin);
+          if (res.totalWin>0){ bankCredit(res.totalWin); const profit=res.totalWin-totalBet; if(window.CasinoAddictive){CasinoAddictive.Streak.win(); CasinoAddictive.Level.addXP(profit); CasinoAddictive.Stats.recordWin(res.totalWin, profit); if(res.totalWin>=totalBet*15) CasinoAddictive.screenShake(0.9);} }
+          else if(!res.freeSpinsWon && res.totalWin===0){ if(window.CasinoAddictive){CasinoAddictive.Streak.lose(); CasinoAddictive.Stats.recordLoss(totalBet);} }
           if (res.totalWin > 0) {
             highlightWins(res.paylineWins);
             // FX thresholds
@@ -635,5 +667,7 @@
         window.addEventListener('DOMContentLoaded', init);
       })();
     </script>
+    <script src="casino-addictive.js"></script>
   </body>
 </html>
+

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Casino - Home</title>
+  <link rel="stylesheet" href="casino-theme.css" />
+  <style>
+    main { 
+      padding: 40px 20px; 
+      max-width: 1200px; 
+      margin: 0 auto; 
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      margin: 0 0 16px 0;
+      background: linear-gradient(135deg, var(--accent), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+
+    .game-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .game-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .game-card:hover {
+      transform: translateY(-8px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 40px rgba(0,231,1,0.2);
+    }
+
+    .game-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,231,1,0.3));
+    }
+
+    .game-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      color: var(--text);
+    }
+
+    .game-card p {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 20px 0;
+      line-height: 1.6;
+    }
+
+    .game-card .btn {
+      width: 100%;
+    }
+
+    .stats-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .stats-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .leaderboard {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .leaderboard h2 {
+      margin: 0 0 20px 0;
+      font-size: 20px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+    }
+
+    .leaderboard-item:hover {
+      background: rgba(255,255,255,0.06);
+    }
+
+    .leaderboard-rank {
+      font-weight: 800;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: rgba(0,231,1,0.1);
+      color: var(--accent);
+    }
+
+    .leaderboard-rank.gold {
+      background: linear-gradient(135deg, #ffd700, #ffed4e);
+      color: #000;
+    }
+
+    .leaderboard-rank.silver {
+      background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+      color: #000;
+    }
+
+    .leaderboard-rank.bronze {
+      background: linear-gradient(135deg, #cd7f32, #d4a76a);
+      color: #000;
+    }
+
+    .leaderboard-player {
+      flex: 1;
+      margin-left: 12px;
+      font-weight: 600;
+    }
+
+    .leaderboard-balance {
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .stats-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .stats-card h2 {
+      margin: 0 0 20px 0;
+      font-size: 20px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stat-value {
+      color: var(--text);
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .name-prompt {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+    }
+
+    .name-prompt.active {
+      display: flex;
+    }
+
+    .name-prompt-content {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .name-prompt h3 {
+      margin: 0 0 16px 0;
+      font-size: 24px;
+    }
+
+    .name-prompt p {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .name-prompt input {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span> 
+      <span>Casino</span>
+    </div>
+    <nav class="nav">
+      <a href="home.html" class="active">🏠 Home</a>
+      <a href="index.html">♠️ Blackjack</a>
+      <a href="roulette.html">🎡 Roulette</a>
+      <a href="slots.html">🎰 Slots</a>
+      <a href="dice.html">🎲 Dice</a>
+      <a href="crash.html">🚀 Crash</a>
+      <a href="plinko.html">🔻 Plinko</a>
+    </nav>
+    <div class="balance">
+      <span>Guthaben:</span>
+      <span class="amount" id="bankroll">$1,000</span>
+      <button class="btn secondary" id="reset-bank">Reset</button>
+      <button class="btn secondary" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>🎰 Willkommen im Casino</h1>
+      <p>Wähle dein Lieblingsspiel und gewinne groß!</p>
+    </div>
+
+    <div class="games-grid">
+      <div class="game-card" onclick="window.location.href='index.html'">
+        <span class="game-icon">♠️</span>
+        <h3>Blackjack</h3>
+        <p>Klassisches Kartenspiel. Komme so nah wie möglich an 21 ohne zu überkaufen!</p>
+        <button class="btn">Spielen</button>
+      </div>
+
+      <div class="game-card" onclick="window.location.href='roulette.html'">
+        <span class="game-icon">🎡</span>
+        <h3>Roulette</h3>
+        <p>Drehe das Rad des Glücks! Setze auf Zahlen, Farben oder Gruppen.</p>
+        <button class="btn">Spielen</button>
+      </div>
+
+      <div class="game-card" onclick="window.location.href='slots.html'">
+        <span class="game-icon">🎰</span>
+        <h3>Slots</h3>
+        <p>Klassischer Spielautomat mit Freispielen und Multiplikatoren!</p>
+        <button class="btn">Spielen</button>
+      </div>
+
+      <div class="game-card" onclick="window.location.href='dice.html'">
+        <span class="game-icon">🎲</span>
+        <h3>Dice</h3>
+        <p>Würfel-Spiel mit einstellbarem Risiko. Über oder unter einer Zahl?</p>
+        <button class="btn">Spielen</button>
+      </div>
+
+      <div class="game-card" onclick="window.location.href='crash.html'">
+        <span class="game-icon">🚀</span>
+        <h3>Crash</h3>
+        <p>Spannender Multiplier-Game! Steige aus bevor es crasht!</p>
+        <button class="btn">Spielen</button>
+      </div>
+
+      <div class="game-card" onclick="window.location.href='plinko.html'">
+        <span class="game-icon">🔻</span>
+        <h3>Plinko</h3>
+        <p>Physik-basiertes Spiel! Lass Bälle fallen und gewinne bis zu 1000x!</p>
+        <button class="btn">Spielen</button>
+      </div>
+    </div>
+
+    <div class="stats-section">
+      <div class="leaderboard">
+        <h2>🏆 Leaderboard</h2>
+        <div id="leaderboard-list">
+          <div class="leaderboard-item">
+            <div class="leaderboard-rank gold">1</div>
+            <div class="leaderboard-player">Spieler</div>
+            <div class="leaderboard-balance">$1,000</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <h2>📊 Deine Stats</h2>
+        <div class="stat-row">
+          <span class="stat-label">Spieler Name</span>
+          <span class="stat-value" id="player-name">Gast</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Aktuelles Guthaben</span>
+          <span class="stat-value" id="stat-balance">$1,000</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Größter Gewinn</span>
+          <span class="stat-value" id="stat-biggest">$0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Gespielte Spiele</span>
+          <span class="stat-value" id="stat-games">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Gewinnrate</span>
+          <span class="stat-value" id="stat-winrate">0%</span>
+        </div>
+        <button class="btn ghost" onclick="changeName()" style="width:100%; margin-top:16px">Namen ändern</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="name-prompt" id="name-prompt">
+    <div class="name-prompt-content">
+      <h3>👋 Willkommen!</h3>
+      <p>Wie möchtest du genannt werden?</p>
+      <input type="text" class="input" id="name-input" placeholder="Dein Name" maxlength="20" />
+      <button class="btn" onclick="saveName()">Speichern</button>
+    </div>
+  </div>
+
+  <script src="casino-addictive.js"></script>
+  <script>
+    'use strict';
+    const fmt = (n) => `$${Number(n).toLocaleString()}`;
+    
+    // Bankroll
+    const BANK_KEY = 'casino_bankroll_v1';
+    const PLAYER_KEY = 'casino_player_name';
+    const LEADERBOARD_KEY = 'casino_leaderboard_v1';
+    const START_BANK = 1000;
+    
+    let bankroll = loadBank();
+    let playerName = loadPlayerName();
+    const bankrollEl = document.getElementById('bankroll');
+    
+    function loadBank() {
+      try {
+        const n = Number(localStorage.getItem(BANK_KEY));
+        if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+      } catch {}
+      return START_BANK;
+    }
+    
+    function saveBank() {
+      try {
+        localStorage.setItem(BANK_KEY, String(bankroll));
+      } catch {}
+    }
+    
+    function loadPlayerName() {
+      try {
+        const name = localStorage.getItem(PLAYER_KEY);
+        if (name && name.trim()) return name.trim();
+      } catch {}
+      return null;
+    }
+    
+    function savePlayerName(name) {
+      try {
+        localStorage.setItem(PLAYER_KEY, name);
+      } catch {}
+    }
+    
+    function updateDisplay() {
+      bankrollEl.textContent = fmt(bankroll);
+      document.getElementById('stat-balance').textContent = fmt(bankroll);
+      document.getElementById('player-name').textContent = playerName || 'Gast';
+      
+      // Update stats from addictive system
+      if (window.CasinoAddictive) {
+        const stats = CasinoAddictive.Stats.getAll();
+        document.getElementById('stat-biggest').textContent = fmt(stats.biggestWin || 0);
+        document.getElementById('stat-games').textContent = stats.gamesPlayed || 0;
+        const winRate = CasinoAddictive.Stats.getWinRate();
+        document.getElementById('stat-winrate').textContent = winRate + '%';
+      }
+    }
+    
+    // Leaderboard
+    function loadLeaderboard() {
+      try {
+        const data = localStorage.getItem(LEADERBOARD_KEY);
+        if (data) return JSON.parse(data);
+      } catch {}
+      return [];
+    }
+    
+    function saveLeaderboard(board) {
+      try {
+        localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(board));
+      } catch {}
+    }
+    
+    function updateLeaderboard() {
+      let board = loadLeaderboard();
+      
+      // Update or add current player
+      if (playerName) {
+        const existingIndex = board.findIndex(p => p.name === playerName);
+        if (existingIndex >= 0) {
+          board[existingIndex].balance = bankroll;
+          board[existingIndex].timestamp = Date.now();
+        } else {
+          board.push({
+            name: playerName,
+            balance: bankroll,
+            timestamp: Date.now()
+          });
+        }
+      }
+      
+      // Sort by balance
+      board.sort((a, b) => b.balance - a.balance);
+      
+      // Keep top 10
+      board = board.slice(0, 10);
+      
+      saveLeaderboard(board);
+      
+      // Render
+      const container = document.getElementById('leaderboard-list');
+      if (board.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:var(--muted); padding:20px;">Noch keine Einträge</div>';
+        return;
+      }
+      
+      container.innerHTML = board.map((player, index) => {
+        const rank = index + 1;
+        let rankClass = '';
+        if (rank === 1) rankClass = 'gold';
+        else if (rank === 2) rankClass = 'silver';
+        else if (rank === 3) rankClass = 'bronze';
+        
+        const isCurrentPlayer = player.name === playerName;
+        
+        return `
+          <div class="leaderboard-item" style="${isCurrentPlayer ? 'border: 1px solid var(--accent); background: rgba(0,231,1,0.05);' : ''}">
+            <div class="leaderboard-rank ${rankClass}">${rank}</div>
+            <div class="leaderboard-player">${player.name}${isCurrentPlayer ? ' (Du)' : ''}</div>
+            <div class="leaderboard-balance">${fmt(player.balance)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function changeName() {
+      document.getElementById('name-prompt').classList.add('active');
+      document.getElementById('name-input').value = playerName || '';
+      document.getElementById('name-input').focus();
+    }
+    
+    function saveName() {
+      const input = document.getElementById('name-input');
+      const name = input.value.trim();
+      
+      if (!name) {
+        alert('Bitte gib einen Namen ein!');
+        return;
+      }
+      
+      playerName = name;
+      savePlayerName(name);
+      document.getElementById('name-prompt').classList.remove('active');
+      updateDisplay();
+      updateLeaderboard();
+    }
+    
+    // Initialize
+    updateDisplay();
+    updateLeaderboard();
+    
+    // Show name prompt if first visit
+    if (!playerName) {
+      setTimeout(() => {
+        document.getElementById('name-prompt').classList.add('active');
+      }, 500);
+    }
+    
+    // Listen for bankroll changes
+    window.addEventListener('storage', (e) => {
+      if (e.key === BANK_KEY) {
+        const n = Number(e.newValue || '');
+        if (Number.isFinite(n)) {
+          bankroll = Math.max(0, Math.floor(n));
+          updateDisplay();
+          updateLeaderboard();
+        }
+      }
+    });
+    
+    // Reset button
+    document.getElementById('reset-bank').addEventListener('click', () => {
+      if (confirm('Möchtest du dein Guthaben wirklich zurücksetzen?')) {
+        bankroll = START_BANK;
+        saveBank();
+        updateDisplay();
+        updateLeaderboard();
+        // Broadcast to other tabs
+        try {
+          localStorage.setItem(BANK_KEY, String(bankroll));
+        } catch {}
+      }
+    });
+    
+    // Mute toggle (simple version)
+    const muteBtn = document.getElementById('mute-toggle');
+    const MUTE_KEY = 'casino_mute_v1';
+    let muted = false;
+    try {
+      muted = localStorage.getItem(MUTE_KEY) === '1';
+    } catch {}
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.addEventListener('click', () => {
+      muted = !muted;
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      try {
+        localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+      } catch {}
+    });
+    
+    // Enter key for name input
+    document.getElementById('name-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') saveName();
+    });
+    
+    // Update leaderboard periodically
+    setInterval(updateLeaderboard, 5000);
+  </script>
+</body>
+</html>

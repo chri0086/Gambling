@@ -1,8 +1,15 @@
 <!DOCTYPE html>
 <html lang="de">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />      <nav class="nav">
+        <a href="home.html">🏠 Home</a>
+        <a href="index.html">♠️ Blackjack</a>
+        <a href="roulette.html">🎡 Roulette</a>
+        <a href="slots.html">🎰 Slots</a>
+        <a href="dice.html">🎲 Dice</a>
+        <a href="crash.html" class="active">🚀 Crash</a>
+        <a href="plinko.html">🔻 Plinko</a>
+      </nav>a name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Crash</title>
     <style>
       :root { --bg:#0a0f12; --panel:#0e1520; --muted:#9aa4b2; --text:#e6edf3; --accent:#22d3ee; --accent-2:#0ea5e9; --danger:#ef4444; --ok:#10b981; --gold:#ffd166; }
@@ -68,21 +75,25 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="brand"><span class="dot"></span> <span>Crash</span></div>
+      <div class="brand">
+        <span class="dot"></span> 
+        <span>Casino</span>
+      </div>
       <nav class="nav">
-        <a href="index.html">Blackjack</a>
-        <a href="roulette.html">Roulette</a>
-        <a href="slots.html">Slots</a>
-        <a href="dice.html">Dice</a>
-        <a href="crash.html" class="active">Crash</a>
-        <a href="plinko.html">Plinko</a>
+        <a href="home.html"> Home</a> href="index.html">♠️ Blackjack</a>
+        <a href="index.html"> Blackjack</a>
+        <a href="roulette.html">🎡 Roulette</a>
+        <a href="slots.html">🎰 Slots</a>
+        <a href="dice.html">🎲 Dice</a>
+        <a href="crash.html" class="active">🚀 Crash</a>
+        <a href="plinko.html">🔻 Plinko</a>
       </nav>
       <div class="balance">
         <span>Guthaben:</span>
         <span class="amount" id="bankroll">$1,000</span>
-        <button class="btn" id="reset-bank">Reset</button>
-        <button class="btn" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
-        <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">Motion</button>
+        <button class="btn secondary" id="reset-bank">Reset</button>
+        <button class="btn secondary" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
+        <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">⚡</button>
       </div>
     </header>
     <main>
@@ -249,7 +260,10 @@
 
       function endBust(){
         setPhase('bust'); rounds.push(target); updateLast();
-        if(joined && !cashed){ msg.textContent='Bust – Verlust.'; Sound.play('lose'); lastOutcome='loss'; lastBetValue=bet; sessionProfit = bankroll - sessionStartBank; updateResultDisplay(false); checkAutoStops(); }
+        if(joined && !cashed){ 
+          msg.textContent='Bust – Verlust.'; Sound.play('lose'); lastOutcome='loss'; lastBetValue=bet; sessionProfit = bankroll - sessionStartBank; updateResultDisplay(false); checkAutoStops(); 
+          if(window.CasinoAddictive){CasinoAddictive.Streak.lose(); CasinoAddictive.Stats.recordLoss(bet);}
+        }
         startBtn.disabled=true; cashBtn.disabled=true; // kurze Pause, dann neue Runde
         setTimeout(startRound, 2200);
       }
@@ -307,6 +321,7 @@
     lastOutcome='win'; lastBetValue=bet; sessionProfit = bankroll - sessionStartBank;
     updateResultDisplay(true);
     msg.textContent='Auszahlung erhalten ('+mult.toFixed(2)+'x)';
+    if(window.CasinoAddictive){CasinoAddictive.Streak.win(); CasinoAddictive.Level.addXP(Math.floor(profit)); CasinoAddictive.Stats.recordWin(payout, profit); if(mult>=10) CasinoAddictive.screenShake(1.2);}
     checkAutoStops();
   }
 
@@ -315,6 +330,7 @@
         const v = Math.max(1, Math.floor(Number(betIn.value)||0)); if(v>bankroll){ msg.textContent='Zu wenig Guthaben.'; return false; }
         bet = v; autoX = Math.max(0, Number(autoIn.value)||0);
         credit(-bet); Sound.play('click'); joined=true; startBtn.disabled=true; cashBtn.disabled=false; msg.textContent='Einsatz platziert'; countEl.textContent='Warte…';
+        if(window.CasinoAddictive){CasinoAddictive.Stats.recordBet(bet);}
         return true;
       }
 
@@ -339,5 +355,7 @@
       startRound();
       raf = requestAnimationFrame(loop);
     </script>
+    <script src="casino-addictive.js"></script>
   </body>
 </html>
+

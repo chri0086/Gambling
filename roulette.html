@@ -2,7 +2,15 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta n      <nav class="nav">
+        <a href="home.html">🏠 Home</a>
+        <a href="index.html">♠️ Blackjack</a>
+        <a href="roulette.html" class="active">🎡 Roulette</a>
+        <a href="slots.html">🎰 Slots</a>
+        <a href="dice.html">🎲 Dice</a>
+        <a href="crash.html">🚀 Crash</a>
+        <a href="plinko.html">🔻 Plinko</a>
+      </nav>port" content="width=device-width, initial-scale=1.0" />
     <title>Roulette</title>
     <style>
       :root { --bg:#0a0f12; --panel:#0e1520; --muted:#9aa4b2; --text:#e6edf3; --accent:#22d3ee; --accent-2:#0ea5e9; --danger:#ef4444; --ok:#10b981; --gold:#ffd166; }
@@ -80,21 +88,25 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="brand"><span class="dot"></span> <span>Roulette</span></div>
+      <div class="brand">
+        <span class="dot"></span> 
+        <span>Casino</span>
+      </div>
       <nav class="nav">
-        <a href="index.html">Blackjack</a>
-        <a href="roulette.html" class="active">Roulette</a>
-        <a href="slots.html">Slots</a>
-        <a href="dice.html">Dice</a>
-        <a href="crash.html">Crash</a>
-        <a href="plinko.html">Plinko</a>
+        <a href="home.html"> Home</a> href="index.html">♠️ Blackjack</a>
+        <a href="index.html"> Blackjack</a>
+        <a href="roulette.html" class="active">🎡 Roulette</a>
+        <a href="slots.html">🎰 Slots</a>
+        <a href="dice.html">🎲 Dice</a>
+        <a href="crash.html">🚀 Crash</a>
+        <a href="plinko.html">🔻 Plinko</a>
       </nav>
       <div class="balance">
         <span>Guthaben:</span>
         <span class="amount" id="bankroll">$1,000</span>
-        <button class="btn" id="reset-bank">Reset</button>
-        <button class="btn" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
-        <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">Motion</button>
+        <button class="btn secondary" id="reset-bank">Reset</button>
+        <button class="btn secondary" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
+        <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">⚡</button>
       </div>
     </header>
     <main>
@@ -364,13 +376,16 @@
           const type = typeSel.value; const pick = Math.floor(Number(numberIn.value)||0);
           if(type==='red' && c==='rot') win=upfrontBet*2; else if(type==='black' && c==='schwarz') win=upfrontBet*2; else if(type==='odd' && n!==0 && (n%2===1)) win=upfrontBet*2; else if(type==='even' && n!==0 && (n%2===0)) win=upfrontBet*2; else if(type==='number' && pick===n) win=upfrontBet*36;
         }
-        if(win>0){ credit(win); msg.textContent='Gewinn '+fmt(win-upfrontBet)+' (Auszahlung '+fmt(win)+')'; if(!usingMat || win>=36){ FX.burst(1.2); } Sound.play('win'); }
-        else { msg.textContent='Verlust.'; Sound.play('lose'); }
+        if(win>0){ const profit=win-upfrontBet; credit(win); msg.textContent='Gewinn '+fmt(profit)+' (Auszahlung '+fmt(win)+')'; if(!usingMat || win>=36){ FX.burst(1.2); } Sound.play('win'); if(window.CasinoAddictive){CasinoAddictive.Streak.win(); CasinoAddictive.Level.addXP(profit); CasinoAddictive.Stats.recordWin(win, profit); if(win>=500) CasinoAddictive.screenShake(1.0);} }
+        else { msg.textContent='Verlust.'; Sound.play('lose'); if(window.CasinoAddictive){CasinoAddictive.Streak.lose(); CasinoAddictive.Stats.recordLoss(upfrontBet);} }
         if(usingMat){ clearBets(); }
+        if(window.CasinoAddictive){CasinoAddictive.Stats.recordBet(upfrontBet);}
         spinBtn.disabled=false; betIn.disabled=false; typeSel.disabled=false; numberIn.disabled=false; if(clearBetsBtn) clearBetsBtn.disabled=false; if(bettingMat) bettingMat.style.pointerEvents='';
       });
     </script>
+    <script src="casino-addictive.js"></script>
   </body>
 </html>
  
  
+
