@@ -69,6 +69,12 @@
     .card-corner { position:absolute; top:4px; left:6px; font-size:14px; }
     .hand-value { font-size:18px; font-weight:800; color:var(--accent); }
     .action-btns { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; }
+    .action-btns.extended { grid-template-columns: repeat(3, 1fr); }
+    .btn.full-width { grid-column: 1 / -1; }
+    .insurance-offer { background: rgba(255,200,0,0.1); border:2px solid var(--gold); padding:12px; border-radius:8px; margin-bottom:12px; text-align:center; }
+    .insurance-offer .insurance-btns { display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px; }
+    .split-hand { border-top:2px solid rgba(255,255,255,0.1); padding-top:12px; margin-top:12px; }
+    .split-hand.active { border-color:var(--accent); }
   </style>
 </head>
 <body>
@@ -135,11 +141,16 @@
         <div class="hand">
           <h3>Spieler <span class="hand-value" id="player-value">-</span></h3>
           <div class="cards" id="player-cards"></div>
+          <div id="split-hand-container"></div>
         </div>
       </div>
+      <div id="insurance-offer" style="display:none"></div>
       <div class="action-btns" id="action-btns" style="display:none">
         <button class="btn" id="hit-btn">Hit</button>
         <button class="btn danger" id="stand-btn">Stand</button>
+        <button class="btn ghost" id="double-btn" style="display:none">Double Down</button>
+        <button class="btn ghost" id="split-btn" style="display:none">Split</button>
+        <button class="btn secondary" id="surrender-btn" style="display:none">Surrender</button>
       </div>
       <div class="msg" id="game-msg"></div>
     </section>
@@ -167,14 +178,18 @@
 
     // Blackjack Game Logic
     const betIn=$('#bet-input'), dealBtn=$('#deal-btn'), hitBtn=$('#hit-btn'), standBtn=$('#stand-btn');
-    const msg=$('#game-msg'), actionBtns=$('#action-btns');
+    const doubleBtn=$('#double-btn'), splitBtn=$('#split-btn'), surrenderBtn=$('#surrender-btn');
+    const msg=$('#game-msg'), actionBtns=$('#action-btns'), insuranceOffer=$('#insurance-offer');
     const dealerCards=$('#dealer-cards'), playerCards=$('#player-cards');
     const dealerValue=$('#dealer-value'), playerValue=$('#player-value');
     const statGames=$('#stat-games'), statWins=$('#stat-wins'), statWinrate=$('#stat-winrate');
     const quickBtns=$$('.quick-bets .btn');
+    const splitHandContainer=$('#split-hand-container');
 
     let deck=[], playerHand=[], dealerHand=[], bet=0, gameActive=false;
     let sessionGames=0, sessionWins=0;
+    let hasDoubled=false, hasSplit=false, splitHands=[], currentHandIndex=0;
+    let insuranceBet=0, canSurrender=true;
 
     quickBtns.forEach(b=> b.addEventListener('click',()=>{ 
       const k=b.getAttribute('data-qb'); 
@@ -228,15 +243,57 @@
     function renderHands(){
       dealerCards.innerHTML='';
       playerCards.innerHTML='';
+      splitHandContainer.innerHTML='';
+      
       dealerHand.forEach((c,i)=> dealerCards.appendChild(renderCard(c, i===0 && gameActive)));
-      playerHand.forEach(c=> playerCards.appendChild(renderCard(c)));
+      
+      if(hasSplit){
+        // Render split hands
+        splitHands.forEach((hand, idx)=>{
+          const div=document.createElement('div');
+          div.className='split-hand' + (idx===currentHandIndex?' active':'');
+          div.innerHTML=`<h4>Hand ${idx+1} <span class="hand-value">${handValue(hand)}</span></h4><div class="cards"></div>`;
+          const cardsDiv=div.querySelector('.cards');
+          hand.forEach(c=> cardsDiv.appendChild(renderCard(c)));
+          splitHandContainer.appendChild(div);
+        });
+        playerValue.textContent = '-';
+      } else {
+        playerHand.forEach(c=> playerCards.appendChild(renderCard(c)));
+        playerValue.textContent = handValue(playerHand);
+      }
+      
       dealerValue.textContent = gameActive ? '?' : handValue(dealerHand);
-      playerValue.textContent = handValue(playerHand);
+    }
+
+    function updateActionButtons(){
+      const currentHand = hasSplit ? splitHands[currentHandIndex] : playerHand;
+      const handVal = handValue(currentHand);
+      const isFirstAction = currentHand.length === 2;
+      
+      // Double Down - nur bei den ersten 2 Karten
+      doubleBtn.style.display = (isFirstAction && !hasDoubled && bankroll >= bet) ? 'block' : 'none';
+      
+      // Split - nur bei Paar und genug Guthaben
+      const canSplit = isFirstAction && !hasSplit && currentHand.length===2 && 
+                       cardValue(currentHand[0]) === cardValue(currentHand[1]) && 
+                       bankroll >= bet;
+      splitBtn.style.display = canSplit ? 'block' : 'none';
+      
+      // Surrender - nur bei den ersten 2 Karten
+      surrenderBtn.style.display = (canSurrender && isFirstAction) ? 'block' : 'none';
+      
+      // Grid layout anpassen
+      const visibleBtns = [hitBtn, standBtn, doubleBtn, splitBtn, surrenderBtn].filter(b=>b.style.display!=='none').length;
+      actionBtns.className = 'action-btns' + (visibleBtns > 2 ? ' extended' : '');
     }
 
     dealBtn.addEventListener('click', startGame);
     hitBtn.addEventListener('click', hit);
     standBtn.addEventListener('click', stand);
+    doubleBtn.addEventListener('click', doubleDown);
+    splitBtn.addEventListener('click', split);
+    surrenderBtn.addEventListener('click', surrender);
 
     function startGame(){
       bet = Math.max(1, Number(betIn.value)||0);
@@ -246,39 +303,265 @@
       playerHand=[deck.pop(), deck.pop()];
       dealerHand=[deck.pop(), deck.pop()];
       gameActive=true;
+      hasDoubled=false;
+      hasSplit=false;
+      splitHands=[];
+      currentHandIndex=0;
+      insuranceBet=0;
+      canSurrender=true;
       dealBtn.disabled=true;
       actionBtns.style.display='grid';
+      insuranceOffer.style.display='none';
       msg.textContent='';
       msg.className='msg';
       renderHands();
       Sound.play('click');
       
-      // Check for instant blackjack
-      if(handValue(playerHand)===21){
-        stand();
+      // Check für Insurance (Dealer zeigt Ass)
+      if(dealerHand[1].rank==='A'){
+        offerInsurance();
+        return;
+      }
+      
+      // Check for instant blackjack (3:2 Auszahlung!)
+      if(handValue(playerHand)===21 && playerHand.length===2){
+        gameActive=false;
+        actionBtns.style.display='none';
+        // Dealer muss auch prüfen
+        if(handValue(dealerHand)===21){
+          endGame('push');
+        } else {
+          const payout = Math.floor(bet * 2.5); // 3:2 = 1.5× Gewinn + Einsatz zurück
+          credit(payout);
+          msg.textContent=`🎉 BLACKJACK! 3:2 Auszahlung ${fmt(payout)}!`;
+          msg.className='msg win';
+          Sound.play('win');
+          sessionGames++;
+          sessionWins++;
+          dealBtn.disabled=false;
+          renderHands();
+          updateStats();
+          if(window.CasinoAddictive){
+            CasinoAddictive.Streak.win(); 
+            CasinoAddictive.Level.addXP(Math.floor(bet*1.5)); 
+            CasinoAddictive.Stats.recordWin(payout, Math.floor(bet*1.5));
+            CasinoAddictive.Stats.recordBet(bet);
+          }
+        }
+      } else {
+        updateActionButtons();
+      }
+    }
+
+    function offerInsurance(){
+      const insuranceAmount = Math.floor(bet / 2);
+      insuranceOffer.style.display='block';
+      insuranceOffer.innerHTML=`
+        <div style="font-weight:700; color:var(--gold)">Versicherung anbieten?</div>
+        <div style="font-size:12px; color:var(--muted); margin:4px 0">Dealer zeigt Ass. Versicherung kostet ${fmt(insuranceAmount)}</div>
+        <div class="insurance-btns">
+          <button class="btn ghost" id="insurance-yes">Ja (${fmt(insuranceAmount)})</button>
+          <button class="btn secondary" id="insurance-no">Nein</button>
+        </div>
+      `;
+      
+      $('#insurance-yes').addEventListener('click', ()=>{
+        if(bankroll < insuranceAmount){
+          msg.textContent='Nicht genug für Versicherung';
+          msg.className='msg lose';
+          return;
+        }
+        credit(-insuranceAmount);
+        insuranceBet = insuranceAmount;
+        insuranceOffer.style.display='none';
+        checkDealerBlackjack();
+      });
+      
+      $('#insurance-no').addEventListener('click', ()=>{
+        insuranceOffer.style.display='none';
+        checkDealerBlackjack();
+      });
+    }
+
+    function checkDealerBlackjack(){
+      if(handValue(dealerHand)===21){
+        // Dealer hat Blackjack
+        gameActive=false;
+        renderHands();
+        if(insuranceBet > 0){
+          const insurancePayout = insuranceBet * 3; // 2:1 Auszahlung
+          credit(insurancePayout);
+          msg.textContent=`Dealer Blackjack! Versicherung zahlt ${fmt(insurancePayout)}`;
+          msg.className='msg';
+        } else {
+          msg.textContent='Dealer Blackjack! Verloren.';
+          msg.className='msg lose';
+          Sound.play('lose');
+        }
+        endRound();
+      } else {
+        // Dealer hat kein Blackjack, Versicherung verloren
+        if(insuranceBet > 0){
+          msg.textContent='Versicherung verloren. Spiel geht weiter.';
+          msg.className='msg';
+        }
+        updateActionButtons();
       }
     }
 
     function hit(){
-      playerHand.push(deck.pop());
+      canSurrender = false;
+      const currentHand = hasSplit ? splitHands[currentHandIndex] : playerHand;
+      currentHand.push(deck.pop());
       renderHands();
       Sound.play('click');
-      if(handValue(playerHand)>21){
-        endGame('bust');
+      
+      if(handValue(currentHand)>21){
+        if(hasSplit && currentHandIndex < splitHands.length - 1){
+          // Nächste Split-Hand
+          currentHandIndex++;
+          renderHands();
+          updateActionButtons();
+        } else {
+          endGame('bust');
+        }
+      } else {
+        updateActionButtons();
       }
     }
 
     function stand(){
+      if(hasSplit && currentHandIndex < splitHands.length - 1){
+        // Nächste Split-Hand
+        currentHandIndex++;
+        canSurrender = false;
+        renderHands();
+        updateActionButtons();
+        return;
+      }
+      
       gameActive=false;
       // Dealer draws to 17
       while(handValue(dealerHand)<17){
         dealerHand.push(deck.pop());
       }
       renderHands();
-      const pVal=handValue(playerHand), dVal=handValue(dealerHand);
-      if(dVal>21 || pVal>dVal) endGame('win');
-      else if(pVal<dVal) endGame('lose');
-      else endGame('push');
+      
+      if(hasSplit){
+        evaluateSplitHands();
+      } else {
+        const pVal=handValue(playerHand), dVal=handValue(dealerHand);
+        if(dVal>21 || pVal>dVal) endGame('win');
+        else if(pVal<dVal) endGame('lose');
+        else endGame('push');
+      }
+    }
+
+    function doubleDown(){
+      if(bankroll < bet){
+        msg.textContent='Nicht genug Guthaben für Double Down';
+        msg.className='msg lose';
+        return;
+      }
+      
+      credit(-bet);
+      bet *= 2;
+      hasDoubled = true;
+      
+      const currentHand = hasSplit ? splitHands[currentHandIndex] : playerHand;
+      currentHand.push(deck.pop());
+      renderHands();
+      Sound.play('click');
+      
+      if(handValue(currentHand)>21){
+        endGame('bust');
+      } else {
+        stand();
+      }
+    }
+
+    function split(){
+      if(bankroll < bet){
+        msg.textContent='Nicht genug Guthaben für Split';
+        msg.className='msg lose';
+        return;
+      }
+      
+      credit(-bet);
+      hasSplit = true;
+      splitHands = [
+        [playerHand[0], deck.pop()],
+        [playerHand[1], deck.pop()]
+      ];
+      currentHandIndex = 0;
+      playerHand = [];
+      canSurrender = false;
+      
+      renderHands();
+      updateActionButtons();
+      Sound.play('click');
+    }
+
+    function surrender(){
+      gameActive = false;
+      actionBtns.style.display = 'none';
+      dealBtn.disabled = false;
+      
+      const refund = Math.floor(bet / 2);
+      credit(refund);
+      
+      msg.textContent = `Aufgegeben. ${fmt(refund)} zurückerhalten.`;
+      msg.className = 'msg';
+      
+      sessionGames++;
+      updateStats();
+      
+      if(window.CasinoAddictive){
+        CasinoAddictive.Stats.recordBet(bet);
+        CasinoAddictive.Stats.recordLoss(bet - refund);
+      }
+    }
+
+    function evaluateSplitHands(){
+      const dVal = handValue(dealerHand);
+      let totalWin = 0;
+      let wins = 0;
+      
+      splitHands.forEach(hand=>{
+        const pVal = handValue(hand);
+        if(pVal > 21){
+          // Bust - nichts
+        } else if(dVal > 21 || pVal > dVal){
+          totalWin += bet;
+          wins++;
+        } else if(pVal === dVal){
+          totalWin += bet / 2; // Push
+        }
+      });
+      
+      if(totalWin > 0){
+        const payout = totalWin * 2;
+        credit(payout);
+        msg.textContent = `Split: ${wins} Hand(en) gewonnen! +${fmt(payout)}`;
+        msg.className = 'msg win';
+        Sound.play('win');
+        sessionWins++;
+        if(window.CasinoAddictive){
+          CasinoAddictive.Streak.win();
+          CasinoAddictive.Level.addXP(Math.floor(totalWin));
+          CasinoAddictive.Stats.recordWin(payout, totalWin);
+        }
+      } else {
+        msg.textContent = 'Split: Alle Hände verloren.';
+        msg.className = 'msg lose';
+        Sound.play('lose');
+        if(window.CasinoAddictive){
+          CasinoAddictive.Streak.lose();
+          CasinoAddictive.Stats.recordLoss(bet * 2);
+        }
+      }
+      
+      endRound();
     }
 
     function endGame(result){
@@ -286,7 +569,8 @@
       actionBtns.style.display='none';
       dealBtn.disabled=false;
       renderHands();
-      sessionGames++;
+      
+      endRound();
       
       if(result==='win'){
         const payout=bet*2;
@@ -305,7 +589,7 @@
         msg.textContent='Push - Einsatz zurück';
         msg.className='msg';
       } else {
-        msg.textContent='Verloren.';
+        msg.textContent= result==='bust' ? 'Bust! Überkauft.' : 'Verloren.';
         msg.className='msg lose';
         Sound.play('lose');
         if(window.CasinoAddictive){
@@ -315,7 +599,15 @@
       }
       
       if(window.CasinoAddictive){CasinoAddictive.Stats.recordBet(bet);}
-      
+      updateStats();
+    }
+
+    function endRound(){
+      sessionGames++;
+      updateStats();
+    }
+
+    function updateStats(){
       statGames.textContent=sessionGames;
       statWins.textContent=sessionWins;
       statWinrate.textContent=sessionGames>0 ? Math.round(sessionWins/sessionGames*100)+'%' : '0%';
