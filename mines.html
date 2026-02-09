@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mines - Casino</title>
+  <style>
+    :root { --bg:#0f1923; --panel:#1a2c38; --muted:#9aa4b2; --text:#e6edf3; --accent:#00e701; --accent-2:#00b929; --danger:#ff003f; --ok:#00e701; --gold:#ffc800; }
+    *{box-sizing:border-box}
+    html, body { height: 100%; }
+    body { margin:0; font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #0f1923; color: var(--text); }
+    body.reduce-motion * { animation: none !important; transition: none !important; }
+
+    .topbar { display:flex; align-items:center; gap:12px; justify-content:space-between; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.05); background: #1a2c38; position: sticky; top: 0; backdrop-filter: blur(6px); z-index:100; }
+    .brand { font-weight:800; display:flex; align-items:center; gap:8px; font-size:18px; }
+    .brand .dot{ width:10px; height:10px; border-radius:50%; background: var(--accent); box-shadow: 0 0 12px var(--accent) }
+    .nav { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .nav a { color: var(--muted); text-decoration:none; padding:8px 12px; border-radius:8px; transition: all 0.2s; font-size:14px; font-weight:500; }
+    .nav a:hover { background: rgba(255,255,255,.05); color: var(--text); }
+    .nav a.active { background: rgba(0,231,1,.08); color: var(--accent); font-weight:700; }
+    .balance { display:flex; align-items:center; gap:10px; background: rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05); padding:6px 10px; border-radius:8px; }
+    .balance .amount { color: var(--gold); font-weight:800; font-size:16px; }
+
+    main { padding: 20px; display:grid; grid-template-columns: 320px 1fr; gap:20px; position: relative; max-width: 1400px; margin: 0 auto; }
+    @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+    .panel { background: #1a2c38; border:1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; }
+    .panel h3 { margin:0 0 16px 0; font-size:16px; color: var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+    .controls { display:flex; flex-direction:column; gap: 16px; }
+    .control-group { display:flex; flex-direction:column; gap:8px; }
+    .control-group label { color: var(--muted); font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+    .input { background: rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color: var(--text); padding:12px 14px; border-radius:8px; font-size:15px; font-weight:600; transition: all 0.2s; }
+    .input:focus { outline:none; border-color: var(--accent); background: rgba(0,0,0,0.4); }
+    .btn { background: var(--accent); color:#000; border: none; padding: 14px 18px; border-radius:8px; font-weight:700; cursor:pointer; transition: all 0.2s; font-size:15px; text-transform:uppercase; letter-spacing:0.5px; }
+    .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0px); }
+    .btn:disabled { opacity:.4; cursor:not-allowed; transform: none; }
+    .btn.danger { background: var(--danger); }
+    .btn.secondary { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,.1); color: var(--text); font-size:13px; padding:6px 12px; }
+    .btn.secondary:hover { background: rgba(255,255,255,0.08); }
+    .btn.ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,.1); color: var(--text); }
+    .btn.ghost:hover { background: rgba(255,255,255,0.08); }
+    .muted { color: var(--muted); font-size:13px; }
+    .msg { min-height:24px; font-weight:700; font-size:14px; padding:8px; border-radius:6px; text-align:center; }
+    .msg.win { background: rgba(0,231,1,.1); color: var(--accent); }
+    .msg.lose { background: rgba(255,0,63,.1); color: var(--danger); }
+
+    .quick-bets { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; }
+    .quick-bets .btn { padding:10px; font-size:13px; }
+
+    .stats-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .stats-row:last-child { border-bottom:none; }
+    .stats-label { color: var(--muted); font-size:13px; }
+    .stats-value { color: var(--text); font-weight:700; font-size:14px; }
+
+    .amount.flash-up { animation: amtUp 750ms ease-out; }
+    .amount.flash-down { animation: amtDown 750ms ease-out; }
+    @keyframes amtUp { 0%{ color:#fff } 20%{ color:#00e701; transform: scale(1.08) } 100%{ color: var(--gold); transform: scale(1) } }
+    @keyframes amtDown { 0%{ color:#fff } 20%{ color:#ff003f; transform: scale(0.96) } 100%{ color: var(--gold); transform: scale(1) } }
+
+    /* Mines specific */
+    .game-area { display:flex; flex-direction:column; gap:20px; align-items:center; }
+    .mines-grid { display:grid; gap:8px; margin: 20px 0; }
+    .mines-grid.size-3 { grid-template-columns: repeat(3, 1fr); }
+    .mines-grid.size-4 { grid-template-columns: repeat(4, 1fr); }
+    .mines-grid.size-5 { grid-template-columns: repeat(5, 1fr); }
+
+    .mine-tile {
+      width: 80px;
+      height: 80px;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 32px;
+      position: relative;
+    }
+
+    .mine-tile:hover:not(.revealed):not(.disabled) {
+      background: rgba(255,255,255,0.1);
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+
+    .mine-tile.revealed {
+      background: rgba(0,231,1,0.1);
+      border-color: var(--accent);
+      cursor: default;
+    }
+
+    .mine-tile.mine {
+      background: rgba(255,0,63,0.2);
+      border-color: var(--danger);
+    }
+
+    .mine-tile.disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .multiplier-display {
+      background: rgba(0,231,1,0.1);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      min-width: 250px;
+    }
+
+    .multiplier-display .label {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .multiplier-display .value {
+      color: var(--accent);
+      font-size: 36px;
+      font-weight: 800;
+      margin: 8px 0;
+    }
+
+    .multiplier-display .payout {
+      color: var(--gold);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .game-controls {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .game-controls .btn {
+      flex: 1;
+    }
+
+    @media (max-width: 600px) {
+      .mine-tile { width: 60px; height: 60px; font-size: 24px; }
+      .mines-grid { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>Casino</span>
+    </div>
+    <nav class="nav">
+      <a href="home.html">🏠 Home</a>
+      <a href="index.html">♠️ Blackjack</a>
+      <a href="roulette.html">🎡 Roulette</a>
+      <a href="slots.html">🎰 Slots</a>
+      <a href="dice.html">🎲 Dice</a>
+      <a href="crash.html">🚀 Crash</a>
+      <a href="plinko.html">🔻 Plinko</a>
+      <a href="mines.html" class="active">💣 Mines</a>
+    </nav>
+    <div class="balance">
+      <span>Guthaben:</span>
+      <span class="amount" id="bankroll">$1,000</span>
+      <button class="btn secondary" id="reset-bank">Reset</button>
+      <button class="btn secondary" id="mute-toggle" aria-pressed="false" title="Ton an/aus">🔊</button>
+      <button class="btn ghost" id="motion-toggle" title="Animationen reduzieren">⚡</button>
+    </div>
+  </header>
+  <main>
+    <aside class="panel">
+      <h3>Einstellungen</h3>
+      <div class="controls">
+        <div class="control-group">
+          <label>Einsatz ($)</label>
+          <input type="number" id="bet-input" class="input" value="10" min="1" step="1"/>
+        </div>
+        <div class="quick-bets">
+          <button class="btn ghost" data-qb="half">½</button>
+          <button class="btn ghost" data-qb="double">2×</button>
+          <button class="btn ghost" data-qb="-5">-5</button>
+          <button class="btn ghost" data-qb="+5">+5</button>
+        </div>
+        <div class="control-group">
+          <label>Gittergröße</label>
+          <select id="grid-size" class="input">
+            <option value="3">3x3 (9 Felder)</option>
+            <option value="4">4x4 (16 Felder)</option>
+            <option value="5" selected>5x5 (25 Felder)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Anzahl Minen</label>
+          <input type="number" id="mines-count" class="input" value="5" min="1" max="10" step="1"/>
+        </div>
+        <button class="btn" id="start-btn" style="width:100%">💣 Start</button>
+      </div>
+      <div style="margin-top:24px">
+        <h3>Session Stats</h3>
+        <div class="stats-row">
+          <span class="stats-label">Spiele</span>
+          <span class="stats-value" id="stat-games">0</span>
+        </div>
+        <div class="stats-row">
+          <span class="stats-label">Gewonnen</span>
+          <span class="stats-value" id="stat-wins">0</span>
+        </div>
+        <div class="stats-row">
+          <span class="stats-label">Win Rate</span>
+          <span class="stats-value" id="stat-winrate">0%</span>
+        </div>
+      </div>
+    </aside>
+    <section class="panel game-area">
+      <div class="multiplier-display" id="multiplier-display" style="display:none">
+        <div class="label">Multiplikator</div>
+        <div class="value" id="multiplier-value">1.00x</div>
+        <div class="payout" id="payout-value">Auszahlung: $10</div>
+      </div>
+      <div class="mines-grid size-5" id="mines-grid"></div>
+      <div class="game-controls" id="game-controls" style="display:none">
+        <button class="btn" id="cashout-btn">💰 Auszahlen</button>
+        <button class="btn danger" id="end-btn">❌ Beenden</button>
+      </div>
+      <div class="msg" id="game-msg">Wähle deine Einstellungen und starte das Spiel!</div>
+    </section>
+  </main>
+  <script src="casino-addictive.js"></script>
+  <script>
+    'use strict';
+    const $=(s)=>document.querySelector(s); const $$=(s)=>Array.from(document.querySelectorAll(s)); const fmt=(n)=>`$${Number(n).toLocaleString()}`;
+    const BANK_KEY='casino_bankroll_v1'; const START_BANK=1000; let bankroll=loadBank(); const bankrollEl=$('#bankroll');
+    const BUS = ('BroadcastChannel' in window) ? new BroadcastChannel('casino_bankroll_bus') : null;
+    function loadBank(){ try{ const n=Number(localStorage.getItem(BANK_KEY)); if(Number.isFinite(n)&&n>=0) return Math.floor(n);}catch{} return START_BANK; }
+    function saveBank(){ try{ localStorage.setItem(BANK_KEY, String(bankroll)); }catch{} }
+    function updateBankEl(){ bankrollEl.textContent = fmt(bankroll); }
+    function broadcastBank(){ try{ BUS && BUS.postMessage({ t:'bank', v: bankroll }); }catch{} }
+    function credit(delta){ bankroll=Math.max(0, bankroll+delta); updateBankEl(); bankrollEl.classList.remove('flash-up','flash-down'); void bankrollEl.offsetWidth; bankrollEl.classList.add(delta>=0?'flash-up':'flash-down'); saveBank(); broadcastBank(); }
+    window.addEventListener('storage', (e)=>{ if(e.key===BANK_KEY){ const n=Number(e.newValue||''); if(Number.isFinite(n)){ bankroll = Math.max(0, Math.floor(n)); updateBankEl(); } } });
+    if(BUS){ BUS.addEventListener('message', (ev)=>{ const d=ev.data; if(d && d.t==='bank'){ const n=Number(d.v); if(Number.isFinite(n) && n!==bankroll){ bankroll = Math.max(0, Math.floor(n)); updateBankEl(); } } }); }
+    credit(0);
+    $('#reset-bank').addEventListener('click', ()=>{ bankroll=START_BANK; credit(0); });
+    $('#motion-toggle').addEventListener('click', ()=>{ document.body.classList.toggle('reduce-motion'); });
+
+    const MUTE_KEY='casino_mute_v1'; const MuteBtn=$('#mute-toggle');
+    const Sound=(()=>{ let ctx=null; let muted=(function(){ try{ return localStorage.getItem(MUTE_KEY)==='1'; }catch{} return false; })(); function saveMute(){ try{ localStorage.setItem(MUTE_KEY, muted?'1':'0'); }catch{} } function ensure(){ if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; try{ ctx=new AC(); }catch{} } } function envGain(g){ const gain=ctx.createGain(); gain.gain.value=g; gain.connect(ctx.destination); return gain; } function tone(f=440,d=0.12,t='sine',v=0.05){ if(muted||!ctx) return; const o=ctx.createOscillator(); const g=envGain(v); o.type=t; o.frequency.value=f; o.connect(g); const tt=ctx.currentTime; o.start(tt); o.stop(tt+d); } function click(){ tone(660,0.06,'square',0.03) } function win(){ tone(880,0.1,'sine',0.06); setTimeout(()=>tone(1320,0.12,'sine',0.06),90)} function lose(){ tone(220,0.18,'sawtooth',0.05) } function reveal(){ tone(800,0.08,'sine',0.04) } function update(){ MuteBtn.setAttribute('aria-pressed', muted?'true':'false'); MuteBtn.textContent = muted?'🔇':'🔊'; } update(); return { toggle(){ ensure(); muted=!muted; saveMute(); update(); }, play(n){ ensure(); if(muted) return; if(n==='click') click(); else if(n==='win') win(); else if(n==='lose') lose(); else if(n==='reveal') reveal(); } }; })();
+    MuteBtn.addEventListener('click', ()=>Sound.toggle());
+
+    // Mines Game Logic
+    const betIn=$('#bet-input'), startBtn=$('#start-btn'), cashoutBtn=$('#cashout-btn'), endBtn=$('#end-btn');
+    const gridSizeSelect=$('#grid-size'), minesCountInput=$('#mines-count');
+    const msg=$('#game-msg'), gameControls=$('#game-controls'), minesGrid=$('#mines-grid');
+    const multiplierDisplay=$('#multiplier-display'), multiplierValue=$('#multiplier-value'), payoutValue=$('#payout-value');
+    const statGames=$('#stat-games'), statWins=$('#stat-wins'), statWinrate=$('#stat-winrate');
+    const quickBtns=$$('.quick-bets .btn');
+
+    let gameActive=false, bet=0, gridSize=5, minesCount=5;
+    let tiles=[], revealedCount=0, minePositions=[];
+    let sessionGames=0, sessionWins=0;
+
+    quickBtns.forEach(b=> b.addEventListener('click',()=>{
+      const k=b.getAttribute('data-qb');
+      let v=Math.max(1, Number(betIn.value)||0);
+      if(k==='-5') v=Math.max(1, v-5);
+      else if(k==='+5') v+=5;
+      else if(k==='half') v=Math.max(1, Math.floor(v/2));
+      else if(k==='double') v*=2;
+      v=Math.max(1, Math.min(v, bankroll));
+      betIn.value=v;
+      Sound.play('click');
+    }));
+
+    gridSizeSelect.addEventListener('change', ()=>{
+      gridSize = Number(gridSizeSelect.value);
+      const maxMines = gridSize * gridSize - 1;
+      minesCountInput.max = maxMines;
+      if(Number(minesCountInput.value) > maxMines) {
+        minesCountInput.value = Math.floor(maxMines / 2);
+      }
+    });
+
+    startBtn.addEventListener('click', startGame);
+    cashoutBtn.addEventListener('click', cashOut);
+    endBtn.addEventListener('click', endGame);
+
+    function startGame(){
+      bet = Math.max(1, Number(betIn.value)||0);
+      gridSize = Number(gridSizeSelect.value);
+      minesCount = Math.max(1, Math.min(Number(minesCountInput.value), gridSize * gridSize - 1));
+
+      if(bet>bankroll){
+        msg.textContent='Zu wenig Guthaben.';
+        msg.className='msg lose';
+        return;
+      }
+
+      credit(-bet);
+      gameActive=true;
+      revealedCount=0;
+      tiles=[];
+
+      startBtn.disabled=true;
+      betIn.disabled=true;
+      gridSizeSelect.disabled=true;
+      minesCountInput.disabled=true;
+      gameControls.style.display='flex';
+      multiplierDisplay.style.display='block';
+      msg.textContent='Klicke auf Felder um sie aufzudecken!';
+      msg.className='msg';
+
+      // Generate mine positions
+      const totalTiles = gridSize * gridSize;
+      minePositions = [];
+      while(minePositions.length < minesCount) {
+        const pos = Math.floor(Math.random() * totalTiles);
+        if(!minePositions.includes(pos)) {
+          minePositions.push(pos);
+        }
+      }
+
+      // Create grid
+      minesGrid.innerHTML = '';
+      minesGrid.className = `mines-grid size-${gridSize}`;
+
+      for(let i=0; i<totalTiles; i++) {
+        const tile = document.createElement('div');
+        tile.className = 'mine-tile';
+        tile.dataset.index = i;
+        tile.addEventListener('click', ()=>revealTile(i));
+        minesGrid.appendChild(tile);
+        tiles.push(tile);
+      }
+
+      updateMultiplier();
+      Sound.play('click');
+    }
+
+    function revealTile(index){
+      if(!gameActive) return;
+      const tile = tiles[index];
+      if(tile.classList.contains('revealed') || tile.classList.contains('mine')) return;
+
+      if(minePositions.includes(index)) {
+        // Hit a mine!
+        tile.classList.add('mine');
+        tile.textContent = '💣';
+        gameActive = false;
+
+        // Reveal all mines
+        minePositions.forEach(pos=>{
+          if(pos !== index) {
+            tiles[pos].classList.add('mine');
+            tiles[pos].textContent = '💣';
+          }
+        });
+
+        // Disable all tiles
+        tiles.forEach(t=>t.classList.add('disabled'));
+
+        msg.textContent = `💥 MINE! Verloren: ${fmt(bet)}`;
+        msg.className = 'msg lose';
+        Sound.play('lose');
+
+        gameControls.style.display = 'none';
+        startBtn.disabled = false;
+        betIn.disabled = false;
+        gridSizeSelect.disabled = false;
+        minesCountInput.disabled = false;
+
+        sessionGames++;
+        updateStats();
+
+        if(window.CasinoAddictive){
+          CasinoAddictive.Streak.lose();
+          CasinoAddictive.Stats.recordBet(bet);
+          CasinoAddictive.Stats.recordLoss(bet);
+        }
+      } else {
+        // Safe tile
+        tile.classList.add('revealed');
+        tile.textContent = '💎';
+        revealedCount++;
+        Sound.play('reveal');
+
+        updateMultiplier();
+
+        // Check if won (all safe tiles revealed)
+        const totalSafeTiles = (gridSize * gridSize) - minesCount;
+        if(revealedCount >= totalSafeTiles) {
+          autoWin();
+        }
+      }
+    }
+
+    function updateMultiplier(){
+      const totalTiles = gridSize * gridSize;
+      const safeTiles = totalTiles - minesCount;
+
+      // Calculate multiplier based on probability
+      // Each reveal reduces the safe tiles available
+      let multiplier = 1;
+      for(let i=0; i<revealedCount; i++) {
+        const remainingTiles = totalTiles - i;
+        const remainingSafe = safeTiles - i;
+        multiplier *= remainingTiles / remainingSafe;
+      }
+
+      // Adjust multiplier for house edge (98% RTP)
+      multiplier *= 0.98;
+
+      const payout = Math.floor(bet * multiplier);
+
+      multiplierValue.textContent = multiplier.toFixed(2) + 'x';
+      payoutValue.textContent = `Auszahlung: ${fmt(payout)}`;
+    }
+
+    function cashOut(){
+      if(!gameActive || revealedCount === 0) return;
+
+      const totalTiles = gridSize * gridSize;
+      const safeTiles = totalTiles - minesCount;
+
+      let multiplier = 1;
+      for(let i=0; i<revealedCount; i++) {
+        const remainingTiles = totalTiles - i;
+        const remainingSafe = safeTiles - i;
+        multiplier *= remainingTiles / remainingSafe;
+      }
+      multiplier *= 0.98;
+
+      const payout = Math.floor(bet * multiplier);
+      credit(payout);
+
+      gameActive = false;
+      tiles.forEach(t=>t.classList.add('disabled'));
+
+      // Reveal mines
+      minePositions.forEach(pos=>{
+        tiles[pos].classList.add('mine');
+        tiles[pos].textContent = '💣';
+      });
+
+      msg.textContent = `🎉 Ausgezahlt! Gewinn: ${fmt(payout - bet)} (${multiplier.toFixed(2)}x)`;
+      msg.className = 'msg win';
+      Sound.play('win');
+
+      gameControls.style.display = 'none';
+      startBtn.disabled = false;
+      betIn.disabled = false;
+      gridSizeSelect.disabled = false;
+      minesCountInput.disabled = false;
+
+      sessionGames++;
+      sessionWins++;
+      updateStats();
+
+      if(window.CasinoAddictive){
+        CasinoAddictive.Streak.win();
+        CasinoAddictive.Level.addXP(Math.floor(payout - bet));
+        CasinoAddictive.Stats.recordBet(bet);
+        CasinoAddictive.Stats.recordWin(payout, payout - bet);
+      }
+    }
+
+    function autoWin(){
+      // All safe tiles revealed - automatic win
+      cashOut();
+    }
+
+    function endGame(){
+      if(!gameActive) return;
+
+      gameActive = false;
+      tiles.forEach(t=>t.classList.add('disabled'));
+
+      // Reveal mines
+      minePositions.forEach(pos=>{
+        tiles[pos].classList.add('mine');
+        tiles[pos].textContent = '💣';
+      });
+
+      msg.textContent = `Spiel beendet. Verlust: ${fmt(bet)}`;
+      msg.className = 'msg';
+
+      gameControls.style.display = 'none';
+      startBtn.disabled = false;
+      betIn.disabled = false;
+      gridSizeSelect.disabled = false;
+      minesCountInput.disabled = false;
+
+      sessionGames++;
+      updateStats();
+
+      if(window.CasinoAddictive){
+        CasinoAddictive.Streak.lose();
+        CasinoAddictive.Stats.recordBet(bet);
+        CasinoAddictive.Stats.recordLoss(bet);
+      }
+    }
+
+    function updateStats(){
+      statGames.textContent=sessionGames;
+      statWins.textContent=sessionWins;
+      statWinrate.textContent=sessionGames>0 ? Math.round(sessionWins/sessionGames*100)+'%' : '0%';
+    }
+  </script>
+</body>
+</html>
