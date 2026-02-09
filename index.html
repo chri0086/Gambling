@@ -160,14 +160,79 @@
     'use strict';
     const $=(s)=>document.querySelector(s); const $$=(s)=>Array.from(document.querySelectorAll(s)); const fmt=(n)=>`$${Number(n).toLocaleString()}`;
     const BANK_KEY='casino_bankroll_v1'; const START_BANK=1000; let bankroll=loadBank(); const bankrollEl=$('#bankroll');
-    const BUS = ('BroadcastChannel' in window) ? new BroadcastChannel('casino_bankroll_bus') : null;
-    function loadBank(){ try{ const n=Number(localStorage.getItem(BANK_KEY)); if(Number.isFinite(n)&&n>=0) return Math.floor(n);}catch{} return START_BANK; }
-    function saveBank(){ try{ localStorage.setItem(BANK_KEY, String(bankroll)); }catch{} }
+
+    // Safe BroadcastChannel initialization with error handling
+    let BUS = null;
+    try {
+      if('BroadcastChannel' in window) {
+        BUS = new BroadcastChannel('casino_bankroll_bus');
+      }
+    } catch(e) {
+      console.warn('BroadcastChannel not available:', e);
+    }
+
+    function loadBank(){
+      try{
+        const stored = localStorage.getItem(BANK_KEY);
+        if(stored === null) return START_BANK;
+        const n=Number(stored);
+        if(Number.isFinite(n)&&n>=0) return Math.floor(n);
+      } catch(e) {
+        console.warn('localStorage read failed:', e);
+      }
+      return START_BANK;
+    }
+
+    function saveBank(){
+      try{
+        localStorage.setItem(BANK_KEY, String(bankroll));
+      } catch(e) {
+        console.warn('localStorage write failed:', e);
+      }
+    }
+
     function updateBankEl(){ bankrollEl.textContent = fmt(bankroll); }
-    function broadcastBank(){ try{ BUS && BUS.postMessage({ t:'bank', v: bankroll }); }catch{} }
-    function credit(delta){ bankroll=Math.max(0, bankroll+delta); updateBankEl(); bankrollEl.classList.remove('flash-up','flash-down'); void bankrollEl.offsetWidth; bankrollEl.classList.add(delta>=0?'flash-up':'flash-down'); saveBank(); broadcastBank(); }
-    window.addEventListener('storage', (e)=>{ if(e.key===BANK_KEY){ const n=Number(e.newValue||''); if(Number.isFinite(n)){ bankroll = Math.max(0, Math.floor(n)); updateBankEl(); } } });
-    if(BUS){ BUS.addEventListener('message', (ev)=>{ const d=ev.data; if(d && d.t==='bank'){ const n=Number(d.v); if(Number.isFinite(n) && n!==bankroll){ bankroll = Math.max(0, Math.floor(n)); updateBankEl(); } } }); }
+
+    function broadcastBank(){
+      try{
+        if(BUS) BUS.postMessage({ t:'bank', v: bankroll });
+      } catch(e) {
+        console.warn('BroadcastChannel message failed:', e);
+      }
+    }
+
+    function credit(delta){
+      bankroll=Math.max(0, bankroll+delta);
+      updateBankEl();
+      bankrollEl.classList.remove('flash-up','flash-down');
+      void bankrollEl.offsetWidth;
+      bankrollEl.classList.add(delta>=0?'flash-up':'flash-down');
+      saveBank();
+      broadcastBank();
+    }
+
+    window.addEventListener('storage', (e)=>{
+      if(e.key===BANK_KEY){
+        const n=Number(e.newValue||'');
+        if(Number.isFinite(n)){
+          bankroll = Math.max(0, Math.floor(n));
+          updateBankEl();
+        }
+      }
+    });
+
+    if(BUS){
+      BUS.addEventListener('message', (ev)=>{
+        const d=ev.data;
+        if(d && d.t==='bank'){
+          const n=Number(d.v);
+          if(Number.isFinite(n) && n!==bankroll){
+            bankroll = Math.max(0, Math.floor(n));
+            updateBankEl();
+          }
+        }
+      });
+    }
     credit(0);
     $('#reset-bank').addEventListener('click', ()=>{ bankroll=START_BANK; credit(0); });
     $('#motion-toggle').addEventListener('click', ()=>{ document.body.classList.toggle('reduce-motion'); });
@@ -186,22 +251,35 @@
     const quickBtns=$$('.quick-bets .btn');
     const splitHandContainer=$('#split-hand-container');
 
+    // Input validation helper
+    function validateBetInput(value) {
+      const num = Number(value);
+      if(!Number.isFinite(num) || num < 0.01) return 0.01;
+      if(num > bankroll) return bankroll;
+      return Math.round(num * 100) / 100; // Round to 2 decimal places
+    }
+
     let deck=[], playerHand=[], dealerHand=[], bet=0, gameActive=false;
     let sessionGames=0, sessionWins=0;
     let hasDoubled=false, hasSplit=false, splitHands=[], currentHandIndex=0;
     let insuranceBet=0, canSurrender=true;
 
-    quickBtns.forEach(b=> b.addEventListener('click',()=>{ 
-      const k=b.getAttribute('data-qb'); 
-      let v=Math.max(1, Number(betIn.value)||0); 
-      if(k==='-5') v=Math.max(1, v-5); 
-      else if(k==='+5') v+=5; 
-      else if(k==='half') v=Math.max(1, Math.floor(v/2)); 
-      else if(k==='double') v*=2; 
-      v=Math.max(1, Math.min(v, bankroll)); 
-      betIn.value=v; 
-      Sound.play('click'); 
+    quickBtns.forEach(b=> b.addEventListener('click',()=>{
+      const k=b.getAttribute('data-qb');
+      let v=validateBetInput(betIn.value);
+      if(k==='-5') v=Math.max(0.01, v-5);
+      else if(k==='+5') v+=5;
+      else if(k==='half') v=Math.max(0.01, Math.floor(v/2));
+      else if(k==='double') v*=2;
+      v=validateBetInput(v);
+      betIn.value=v;
+      Sound.play('click');
     }));
+
+    // Validate bet input on blur
+    betIn.addEventListener('blur', ()=> {
+      betIn.value = validateBetInput(betIn.value);
+    });
 
     function createDeck(){
       const suits=['♠','♥','♦','♣'];
@@ -296,7 +374,7 @@
     surrenderBtn.addEventListener('click', surrender);
 
     function startGame(){
-      bet = Math.max(1, Number(betIn.value)||0);
+      bet = validateBetInput(betIn.value);
       if(bet>bankroll){ msg.textContent='Zu wenig Guthaben.'; msg.className='msg lose'; return; }
       credit(-bet);
       createDeck();
@@ -388,15 +466,28 @@
         // Dealer hat Blackjack
         gameActive=false;
         renderHands();
+        const playerHasBlackjack = handValue(playerHand)===21 && playerHand.length===2;
+
         if(insuranceBet > 0){
-          const insurancePayout = insuranceBet * 3; // 2:1 Auszahlung
-          credit(insurancePayout);
-          msg.textContent=`Dealer Blackjack! Versicherung zahlt ${fmt(insurancePayout)}`;
+          const insurancePayout = insuranceBet * 2; // 2:1 Auszahlung (insurance bet zurück + 2× Gewinn)
+          credit(insurancePayout + insuranceBet); // Gewinn + ursprünglicher Versicherungseinsatz
+          if(playerHasBlackjack){
+            credit(bet); // Push auf Hauptwette
+            msg.textContent=`Beide Blackjack! Versicherung zahlt ${fmt(insurancePayout)}, Hauptwette Push`;
+          } else {
+            msg.textContent=`Dealer Blackjack! Versicherung zahlt ${fmt(insurancePayout)}`;
+          }
           msg.className='msg';
         } else {
-          msg.textContent='Dealer Blackjack! Verloren.';
-          msg.className='msg lose';
-          Sound.play('lose');
+          if(playerHasBlackjack){
+            credit(bet); // Push
+            msg.textContent='Beide Blackjack! Push.';
+            msg.className='msg';
+          } else {
+            msg.textContent='Dealer Blackjack! Verloren.';
+            msg.className='msg lose';
+            Sound.play('lose');
+          }
         }
         endRound();
       } else {

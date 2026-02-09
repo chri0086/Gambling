@@ -1,6 +1,28 @@
 /**
  * casino-addictive.js
  * Shared addictive game mechanics across all casino games
+ *
+ * ⚠️ WARNING: CONTAINS EXPLOITATIVE PSYCHOLOGICAL MANIPULATION FEATURES ⚠️
+ *
+ * This file implements multiple addictive design patterns that exploit
+ * psychological vulnerabilities to encourage compulsive gambling behavior:
+ *
+ * - Win streak tracking with multiplier bonuses (encourages "chasing streaks")
+ * - Level/XP progression systems (gamification of gambling)
+ * - Achievement notifications and rewards (dopamine manipulation)
+ * - Visual effects and celebrations (sensory reinforcement)
+ * - Statistics tracking that may create illusion of near-profitability
+ *
+ * These patterns are commonly used in predatory gambling applications and
+ * would likely violate responsible gambling regulations in many jurisdictions.
+ *
+ * RECOMMENDATIONS:
+ * 1. Remove or significantly modify these features
+ * 2. Add responsible gambling tools (betting limits, time limits, self-exclusion)
+ * 3. Display clear warnings about gambling risks
+ * 4. Consider whether these mechanics are ethical for your use case
+ *
+ * See DESIGN_FLAWS.md for detailed analysis of issues in this codebase.
  */
 'use strict';
 

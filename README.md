@@ -1,5 +1,7 @@
 # Casino Demo (Browser)
 
+⚠️ **IMPORTANT NOTICE**: This is a demonstration project only. See [DESIGN_FLAWS.md](DESIGN_FLAWS.md) for critical information about security issues, addictive design patterns, and ethical concerns.
+
 Singleplayer-Casino als Ein-Seiten-App (SPA) – komplett im Browser, ohne Backend. Enthält mehrere Spiele mit gemeinsamem Guthaben (localStorage):
 
 - Blackjack: 6-Deck-Shoe, Dealer steht auf 17, Blackjack 3:2, Double Down
@@ -38,7 +40,22 @@ Dann im Browser `http://localhost:8000` aufrufen und zur Datei navigieren.
 ## Erweiterungen (Ideen)
 
 - Weitere Spiele: Baccarat, Mines, Plinko, Keno, Video Poker, Hi-Lo, Limbo
-- Leaderboard/Verlauf, Seed-basiertes „Provably Fair“
+- Leaderboard/Verlauf, Seed-basiertes „Provably Fair"
 - Animierte Reels/Transitionen, Soundeffekte, Mobile-Optimierungen
 
+## Known Issues and Fixes
+
+This codebase has been analyzed for errors and design flaws. Key issues fixed:
+- ✅ Blackjack insurance payout logic corrected (2:1 instead of incorrect 3:1)
+- ✅ Input validation added for bet amounts
+- ✅ localStorage and BroadcastChannel error handling improved
+- ✅ Duplicate code removed from plinko.html
+- ✅ Syntax errors fixed in plinko.html
+
+See [DESIGN_FLAWS.md](DESIGN_FLAWS.md) for complete analysis of security vulnerabilities, addictive design patterns, and remaining issues.
+
+## Disclaimer
+
 Dieses Projekt ist eine Demo ohne Echtgeldbezug.
+
+**⚠️ This project contains addictive gambling mechanics that may be harmful. It is intended for educational purposes only. Do not use these patterns in real applications without implementing proper responsible gambling safeguards.**
