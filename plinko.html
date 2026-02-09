@@ -35,6 +35,8 @@
     .btn:active { transform: translateY(0px); }
     .btn:disabled { opacity:.4; cursor:not-allowed; transform: none; }
     .btn.danger { background: var(--danger); }
+    .btn.secondary { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,.1); color: var(--text); font-size:13px; padding:6px 12px; }
+    .btn.secondary:hover { background: rgba(255,255,255,0.08); }
     .btn.ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,.1); color: var(--text); }
     .btn.ghost:hover { background: rgba(255,255,255,0.08); }
     .muted { color: var(--muted); font-size:13px; }
@@ -92,7 +94,8 @@
       <span>Casino</span>
     </div>
     <nav class="nav">
-      <a href="home.html"> Home</a>`r`n      <a href="index.html">♠️ Blackjack</a>
+      <a href="home.html">🏠 Home</a>
+      <a href="index.html">♠️ Blackjack</a>
       <a href="roulette.html">🎡 Roulette</a>
       <a href="slots.html">🎰 Slots</a>
       <a href="dice.html">🎲 Dice</a>
@@ -635,9 +638,9 @@
         finishTime: 0,
         hue: (45 + hueOffset) % 360
       };
-      
+
       balls.push(ball);
-      
+
       if(!animationRunning){
         animationRunning = true;
         animate();
@@ -646,243 +649,3 @@
   </script>
 </body>
 </html>
-
-    function renderMultipliers(){
-      const mults=multipliers[risk][rows];
-      multEl.innerHTML = mults.map((m,i)=>{
-        let className = risk + '-';
-        if(risk==='low'){
-          if(m>=10) className+='3';
-          else if(m>=2) className+='2';
-          else if(m>=1) className+='1';
-          else className+='0';
-        } else if(risk==='medium'){
-          if(m>=20) className+='4';
-          else if(m>=5) className+='3';
-          else if(m>=2) className+='2';
-          else if(m>=1) className+='1';
-          else className+='0';
-        } else {
-          if(m>=100) className+='5';
-          else if(m>=20) className+='4';
-          else if(m>=5) className+='3';
-          else if(m>=1) className+='2';
-          else if(m>=0.3) className+='1';
-          else className+='0';
-        }
-        return `<div class="mult-slot ${className}" data-slot="${i}">${m}×</div>`;
-      }).join('');
-    }
-    renderMultipliers();
-
-    riskBtns.forEach(b=> b.addEventListener('click',()=>{ 
-      if(dropping) return;
-      riskBtns.forEach(x=>x.classList.remove('active')); 
-      b.classList.add('active'); 
-      risk=b.dataset.risk; 
-      renderMultipliers(); 
-      drawBoard();
-      Sound.play('click');
-    }));
-
-    rowsBtns.forEach(b=> b.addEventListener('click',()=>{ 
-      if(dropping) return;
-      rowsBtns.forEach(x=>x.classList.remove('active')); 
-      b.classList.add('active'); 
-      rows=Number(b.dataset.rows); 
-      renderMultipliers(); 
-      drawBoard();
-      Sound.play('click');
-    }));
-
-    quickBtns.forEach(b=> b.addEventListener('click',()=>{ 
-      const k=b.getAttribute('data-qb'); 
-      let v=Math.max(0.01, Number(betIn.value)||0); 
-      if(k==='-5') v=Math.max(0.01, v-5); 
-      else if(k==='+5') v+=5; 
-      else if(k==='half') v=Math.max(0.01, v/2); 
-      else if(k==='double') v*=2; 
-      v=Math.max(0.01, Math.min(v, bankroll)); 
-      betIn.value=v.toFixed(2); 
-      Sound.play('click'); 
-    }));
-
-    dropBtn.addEventListener('click', ()=>{ 
-      if(dropping) return; 
-      const bet=Math.max(0.01, Number(betIn.value)||0); 
-      if(bet>bankroll){ 
-        msg.textContent='Zu wenig Guthaben.'; 
-        msg.className='msg lose';
-        return; 
-      } 
-      dropBall(bet); 
-    });
-
-    autoBtn.addEventListener('click', ()=>{ 
-      autoMode=!autoMode; 
-      autoBtn.dataset.active=String(autoMode); 
-      autoBtn.textContent=autoMode?'⏹ Stop Auto':'Auto (10×)'; 
-      if(autoMode){ 
-        autoCount=0; 
-        dropAuto(); 
-      } 
-    });
-
-    function dropAuto(){ 
-      if(!autoMode) return; 
-      const bet=Math.max(0.01, Number(betIn.value)||0); 
-      if(bet>bankroll || autoCount>=10){ 
-        autoMode=false; 
-        autoBtn.dataset.active='false'; 
-        autoBtn.textContent='Auto (10×)'; 
-        return; 
-      } 
-      autoCount++; 
-      dropBall(bet); 
-    }
-
-    function dropBall(bet){
-      if(dropping) return; 
-      dropping=true; 
-      dropBtn.disabled=true; 
-      credit(-bet); 
-      Sound.play('click');
-      
-      const mults=multipliers[risk][rows];
-      const cols=mults.length;
-      const w=canvas.width, h=canvas.height-80; 
-      
-      const startY = 80;
-      const yGap = (h - startY - 60) / rows;
-      const maxWidth = w * 0.7;
-      
-      let x=w/2 + (Math.random()-0.5)*10, y=30, vx=0, vy=0, row=0;
-      const GRAV=0.28, BOUNCE=0.55, FRICTION=0.97;
-      let trail = [];
-
-      function animate(){
-        vy+=GRAV; 
-        vx*=FRICTION;
-        x+=vx; 
-        y+=vy;
-        
-        // Keep trail
-        trail.push({x,y});
-        if(trail.length>20) trail.shift();
-        
-        const currentRow=Math.floor((y - startY) / yGap);
-        if(currentRow>=0 && currentRow>row && currentRow<=rows){
-          row=currentRow;
-          
-          // Calculate peg positions for current row (pyramid)
-          const pegsInRow = row + 3;
-          const rowWidth = (pegsInRow / (rows + 3)) * maxWidth;
-          const xGap = pegsInRow > 1 ? rowWidth / (pegsInRow - 1) : 0;
-          const startX = (w - rowWidth) / 2;
-          const pegY = startY + row * yGap;
-          
-          // Check collision with each peg in this row
-          for(let c=0; c<pegsInRow; c++){
-            const pegX = startX + c * xGap;
-            const dist=Math.sqrt((x-pegX)**2 + (y-pegY)**2);
-            if(dist<14){
-              // Bounce off peg
-              const angle = Math.atan2(y-pegY, x-pegX);
-              const bounceSpeed = 2.5;
-              vx = Math.cos(angle) * bounceSpeed + (Math.random()-0.5)*1.2; 
-              vy = Math.abs(Math.sin(angle)) * bounceSpeed * 0.5; 
-              Sound.play('peg');
-              break;
-            }
-          }
-        }
-        
-        drawBoard();
-        
-        // Draw trail
-        trail.forEach((p,i)=>{
-          const alpha = i/trail.length;
-          ctx.fillStyle=`rgba(255,200,0,${alpha*0.6})`;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
-          ctx.fill();
-        });
-        
-        // Draw ball with glow
-        const ballGrad = ctx.createRadialGradient(x, y, 0, x, y, 14);
-        ballGrad.addColorStop(0, 'rgba(255,200,0,0.9)');
-        ballGrad.addColorStop(0.7, 'rgba(255,200,0,0.4)');
-        ballGrad.addColorStop(1, 'rgba(255,200,0,0)');
-        ctx.fillStyle = ballGrad;
-        ctx.beginPath();
-        ctx.arc(x, y, 14, 0, Math.PI*2);
-        ctx.fill();
-        
-        ctx.fillStyle='#ffc800'; 
-        ctx.shadowColor = '#ffc800';
-        ctx.shadowBlur = 18;
-        ctx.beginPath(); 
-        ctx.arc(x, y, 8, 0, Math.PI*2); 
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        
-        if(y<h+30 && row<=rows){ 
-          requestAnimationFrame(animate); 
-        } else { 
-          finish(x); 
-        }
-      }
-      animate();
-
-      function finish(finalX){
-        // Determine which slot based on final X position
-        const startX = (w - maxWidth) / 2;
-        const slotWidth = maxWidth / cols;
-        const slot = Math.floor((finalX - startX) / slotWidth);
-        const idx=Math.max(0, Math.min(cols-1, slot));
-        const mult=mults[idx];
-        const payout=Math.round(bet*mult*100)/100;
-        const profit=Math.round((payout-bet)*100)/100;
-        
-        credit(payout);
-        sessionDrops++;
-        sessionProfit+=profit;
-        if(profit>sessionBest) sessionBest=profit;
-        
-        statDrops.textContent = sessionDrops;
-        statProfit.textContent = fmt(sessionProfit);
-        statBest.textContent = sessionBest>0 ? fmt(sessionBest) : '-';
-        
-        msg.className='msg ' + (profit>0?'win':'lose');
-        msg.textContent=profit>0?`🎉 Gewinn ${fmt(profit)} (${mult}×)`:`Verlust ${fmt(Math.abs(profit))} (${mult}×)`;
-        
-        if(profit>0){ 
-          Sound.play('win'); 
-          if(mult>=10) FX.burst(Math.min(1.5, mult/20)); 
-          if(mult>=10 && window.CasinoAddictive) CasinoAddictive.screenShake(Math.min(1.0, mult/30));
-          if(window.CasinoAddictive){
-            CasinoAddictive.Streak.win(); 
-            CasinoAddictive.Level.addXP(Math.floor(profit)); 
-            CasinoAddictive.Stats.recordWin(payout, profit);
-          }
-        } else { 
-          Sound.play('lose'); 
-          if(window.CasinoAddictive){
-            CasinoAddictive.Streak.lose(); 
-            CasinoAddictive.Stats.recordLoss(bet);
-          }
-        }
-        if(window.CasinoAddictive){CasinoAddictive.Stats.recordBet(bet);}
-        
-        $$('.mult-slot')[idx].classList.add('hit'); 
-        setTimeout(()=>{ $$('.mult-slot')[idx].classList.remove('hit'); },500);
-        
-        dropping=false; 
-        dropBtn.disabled=false;
-        if(autoMode){ setTimeout(dropAuto, 800); }
-      }
-    }
-  </script>
-</body>
-</html>
-
