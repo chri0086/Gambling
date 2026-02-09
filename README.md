@@ -6,7 +6,8 @@ Singleplayer-Casino als Ein-Seiten-App (SPA) – komplett im Browser, ohne Backe
 - Roulette: Rot/Schwarz, Gerade/Ungerade, Zahl (0–36)
 - Slots: 3x3, 3 horizontale Gewinnlinien, einfache Symbol-Auszahlung
 - Dice: Einstellbare Gewinnchance, dynamische Quote (ca. 1% House-Edge)
-- Crash: Steigender Multiplikator, Cash Out vor „Bust“
+- Crash: Steigender Multiplikator, Cash Out vor „Bust"
+- Coin Flip: Klassisches Münzwurf-Spiel mit fairen 50/50 Odds, 2x Auszahlung, keine House Edge
 
 Ziel ist eine grobe Orientierung am modernen Casino-Stil, ohne Marken/Designs zu kopieren.
 
@@ -34,6 +35,7 @@ Dann im Browser `http://localhost:8000` aufrufen und zur Datei navigieren.
 - Slots: Multiplikatoren pro Linie – 7️⃣ x10, ⭐ x5, 🔔 x3, 🍒/🍋 x2
 - Dice: Quote ≈ 0.99 / Chance, Gewinn wenn Zufall < Chance
 - Crash: Zufälliger Bust-Multiplikator, rechtzeitig Cash Out drücken
+- Coin Flip: Wähle Kopf oder Zahl, faire 50/50 Chance, 2x Auszahlung ohne House Edge
 
 ## Erweiterungen (Ideen)
 
